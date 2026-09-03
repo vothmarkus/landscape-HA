@@ -1,0 +1,11 @@
+export_csv:
+  name: Create CSV export
+  description: >-
+    Creates a complete inventory of all entities at
+    /config/www/ha_entitaeten.csv. An existing file is replaced.
+
+delete_csv:
+  name: Delete CSV file
+  description: >-
+    Deletes /config/www/ha_entitaeten.csv so that the file is no longer
+    available without Home Assistant authentication.

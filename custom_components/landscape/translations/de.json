@@ -1,0 +1,37 @@
+{
+  "config": {
+    "abort": {
+      "already_configured": "HA Landscape ist bereits eingerichtet."
+    },
+    "step": {
+      "user": {
+        "description": "Erstellt bei Bedarf eine vollständige CSV-Bestandsaufnahme aller Home-Assistant-Entitäten. Die Datei wird vorübergehend unter `/local/ha_entitaeten.csv` bereitgestellt."
+      }
+    }
+  },
+  "entity": {
+    "button": {
+      "delete_csv": {
+        "name": "CSV-Datei löschen"
+      },
+      "export_csv": {
+        "name": "CSV-Export erstellen"
+      }
+    },
+    "sensor": {
+      "last_export": {
+        "name": "Letzter CSV-Export"
+      }
+    }
+  },
+  "services": {
+    "delete_csv": {
+      "description": "Löscht die öffentlich erreichbare Entitäten-Bestandsaufnahme.",
+      "name": "CSV-Datei löschen"
+    },
+    "export_csv": {
+      "description": "Erstellt eine vollständige CSV-Bestandsaufnahme aller Home-Assistant-Entitäten.",
+      "name": "CSV-Export erstellen"
+    }
+  }
+}

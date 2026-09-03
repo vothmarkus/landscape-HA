@@ -1,0 +1,37 @@
+{
+  "config": {
+    "abort": {
+      "already_configured": "HA Landscape is already configured."
+    },
+    "step": {
+      "user": {
+        "description": "Creates a complete CSV inventory of Home Assistant entities on demand. The file is temporarily published at `/local/ha_entitaeten.csv`."
+      }
+    }
+  },
+  "entity": {
+    "button": {
+      "delete_csv": {
+        "name": "Delete CSV file"
+      },
+      "export_csv": {
+        "name": "Create CSV export"
+      }
+    },
+    "sensor": {
+      "last_export": {
+        "name": "Last CSV export"
+      }
+    }
+  },
+  "services": {
+    "delete_csv": {
+      "description": "Deletes the public entity inventory file.",
+      "name": "Delete CSV file"
+    },
+    "export_csv": {
+      "description": "Creates a complete CSV inventory of all Home Assistant entities.",
+      "name": "Create CSV export"
+    }
+  }
+}
