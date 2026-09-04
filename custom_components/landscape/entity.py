@@ -26,6 +26,7 @@ class LandscapeEntity(Entity):
             manufacturer="HA Landscape",
             model="Entity CSV Exporter",
             sw_version=VERSION,
+            configuration_url=exporter.full_download_url,
         )
 
     async def async_added_to_hass(self) -> None:

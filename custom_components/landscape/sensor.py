@@ -49,6 +49,8 @@ class LandscapeExportStatusSensor(LandscapeEntity, SensorEntity):
             "entity_count": self.exporter.status.entity_count,
             "file_size_bytes": self.exporter.status.file_size,
             "file_path": "/config/www/ha_entitaeten.csv",
-            "download_url": self.exporter.download_url,
-            "versioned_download_url": self.exporter.versioned_download_url,
+            "download_url": self.exporter.full_download_url
+            or self.exporter.download_url,
+            "versioned_download_url": self.exporter.full_versioned_download_url,
+            "relative_download_url": self.exporter.download_url,
         }

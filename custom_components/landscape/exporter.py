@@ -22,6 +22,7 @@ from homeassistant.helpers import (
     label_registry,
 )
 from homeassistant.helpers.dispatcher import async_dispatcher_send
+from homeassistant.helpers.network import NoURLAvailableError, get_url
 
 from .const import CSV_FILENAME, SIGNAL_EXPORT_UPDATED
 from .csv_writer import delete_csv, write_csv
@@ -156,7 +157,7 @@ class LandscapeExporter:
                 (
                     f"{len(rows)} Entitäten wurden exportiert. "
                     "[ha_entitaeten.csv herunterladen]"
-                    f"({self.versioned_download_url}).\n\n"
+                    f"({self.full_versioned_download_url}).\n\n"
                     "Die Datei liegt im öffentlichen `www`-Ordner und ist ohne "
                     "Home-Assistant-Anmeldung erreichbar. Bitte nach dem "
                     "Herunterladen über die Schaltfläche **CSV-Datei löschen** "
@@ -338,6 +339,29 @@ class LandscapeExporter:
             return self.download_url
         version = int(self.status.exported_at.timestamp())
         return f"{self.download_url}?v={version}"
+
+    @property
+    def full_download_url(self) -> str | None:
+        """Return the absolute download URL shown by Home Assistant."""
+        try:
+            base_url = get_url(
+                self.hass,
+                allow_cloud=False,
+                prefer_external=False,
+            )
+        except NoURLAvailableError:
+            return None
+        return f"{base_url.rstrip('/')}{self.download_url}"
+
+    @property
+    def full_versioned_download_url(self) -> str:
+        """Return the latest absolute URL, falling back to a relative URL."""
+        if (full_url := self.full_download_url) is None:
+            return self.versioned_download_url
+        if self.status.exported_at is None:
+            return full_url
+        version = int(self.status.exported_at.timestamp())
+        return f"{full_url}?v={version}"
 
 
 def _attr(obj: Any | None, name: str, default: Any = None) -> Any:

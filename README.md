@@ -58,6 +58,14 @@ https://DEINE-HA-ADRESSE/local/ha_entitaeten.csv
 Nach erfolgreichem Export erscheint zusätzlich eine Home-Assistant-Meldung mit
 einem direkten Download-Link.
 
+Am Gerät **HA Landscape** zeigt Home Assistant außerdem den anklickbaren Link
+**Besuchen** an. Nach dem ersten Export führt er direkt zur CSV-Datei. Der
+vollständige Link steht zusätzlich im Attribut `download_url` des Sensors
+**Letzter CSV-Export** und wird in der Erfolgsmeldung verwendet. Die Integration
+bevorzugt die unter **Einstellungen → System → Netzwerk** hinterlegte interne
+Home-Assistant-URL. Soll beispielsweise `https://ha.home` verwendet werden,
+muss diese Adresse dort als interne URL eingetragen sein.
+
 > [!WARNING]
 > Dateien in `/config/www` werden von Home Assistant ohne Anmeldung
 > ausgeliefert. Jeder, der die genaue URL erreichen kann, kann die CSV laden.
