@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="custom_components/landscape/brand/icon@2x.png" alt="HA Landscape" width="160">
+</p>
+
 # HA Landscape
 
 HA Landscape erstellt auf Knopfdruck eine vollständige CSV-Bestandsaufnahme
