@@ -22,6 +22,83 @@ passender Automatisierungen zu übergeben.
 - bietet einen eigenen Löschknopf für die veröffentlichte Datei
 - lässt sich über die Oberfläche einrichten; kein YAML nötig
 
+## Assist mit ChatGPT optimieren (ab 0.2.0)
+
+In der Seitenleiste steht Administratoren **Landscape Assist** zur Verfügung.
+
+1. **Assist-ZIP herunterladen** anklicken.
+2. ZIP in ChatGPT hochladen und **„Landscape Assist optimieren.“** schreiben.
+3. Die erzeugte **assist_optimized.json** herunterladen und in Landscape auswählen.
+4. Vorschau prüfen: jede Namensänderung, jeder Alias, jede Assist-Freigabe und
+   jede Bereichs-/Etagenzuweisung hat eine eigene Checkbox.
+5. **Ausgewählte übernehmen**, **Alle übernehmen** oder **Verwerfen** wählen.
+
+Das ZIP enthält:
+
+- **landscape.json**: Namen, Originalnamen, explizite Aliase, Gerät mit Hersteller
+  und Modell, verwandte Geräteentitäten, Bereich, Etage, Assist-Freigabe,
+  Aktivierungsstatus sowie ausgewählte technische Attribute und reduzierte Zustände.
+- **optimization_schema.json**: das verbindliche Patch-Format.
+- **CHATGPT_INSTRUCTIONS.md**: die vollständige deutsche Optimierungsanleitung.
+
+Es werden keine KI-Dienste aus Home Assistant aufgerufen. Weder ein API-Schlüssel
+noch Ollama oder ein lokales Modell wird benötigt.
+
+### Vorschau und Übernahme
+
+- Entity-IDs und Geräte-IDs sind unveränderlich. Unbekannte Felder und Ziele,
+  doppelte JSON-Schlüssel, falsche Datentypen und falsche alte Werte werden abgelehnt.
+- Namen werden als benutzerdefinierter Registry-Name gesetzt; `null` stellt
+  den HA-Standard wieder her. Die Vorschau zeigt dazu den bisherigen Namen.
+- Aliase können einzeln ergänzt oder entfernt werden. Automatisch erzeugte
+  HA-Aliase und die nicht ausgewählten Einstellungen bleiben erhalten.
+- Freigaben betreffen ausschließlich **Assist / conversation**.
+- Bereiche werden über vorhandene Bereichs-IDs zugeordnet. `null` entfernt
+  die explizite Entitätszuweisung, sodass der Gerätebereich geerbt wird.
+- Eine Etage gehört in HA zum **Bereich**. Etagenänderungen zeigen deshalb alle
+  betroffenen Entitäten und sind zunächst abgewählt. **Alle übernehmen** schließt
+  ausdrücklich auch übernehmbare Etagenänderungen ein.
+- Zustandsänderungen wie „an/aus“ machen den Patch nicht ungültig. Geänderte Namen,
+  Aliase oder räumliche Zuordnungen werden dagegen vor dem Schreiben erneut
+  geprüft. Eine Auswahl mit Konflikten führt zu keiner Übernahme.
+- Ohne Registry-Eintrag kann nur die Assist-Freigabe geändert werden.
+- Vor dem Schreiben wird ein Ergebnisprotokoll mit den alten und neuen Werten
+  gespeichert. Bei einem Fehler während der Übernahme versucht Landscape,
+  begonnene Änderungen zurückzusetzen. Fehler beim Zurücksetzen werden einzeln
+  im Protokoll angezeigt. Dieses lässt sich als JSON herunterladen.
+- Nach einem HA-Neustart sind die letzten **drei Exporte** weiterhin importierbar.
+  Eine Vorschau ist für den jeweiligen Administrator eine Stunde gültig und
+  wird nach einer Übernahme verbraucht. Bei Ablauf die Datei erneut prüfen.
+
+Der neue Assist-Export wird über die angemeldete Administrator-Sitzung geladen
+und **nicht** im öffentlichen `www`-Ordner abgelegt. Die Exportstände und das
+letzte Ergebnisprotokoll bleiben in HA gespeichert, bis sie ersetzt oder die
+Integration gelöscht wird. Der vorhandene CSV-Export funktioniert weiterhin.
+
+### Patch-Beispiel
+
+Die `source_id` und alten Werte müssen zum konkreten Export passen:
+
+```json
+{
+  "schema_version": 1,
+  "source_id": "ID_AUS_DEM_EXPORT",
+  "changes": [
+    {
+      "entity_id": "light.schlafzimmer_decke",
+      "name": {"old": "Decke", "new": "Deckenlicht"},
+      "aliases": {"add": ["Deckenlampe", "Licht an der Decke"]},
+      "assist": {"exposed": true},
+      "reason": "Eindeutige Unterscheidung vom Ambientelicht."
+    }
+  ]
+}
+```
+
+Freie Beschreibungen werden als **Begründung** im Patch geführt: HA besitzt
+hierfür kein allgemeines beschreibbares Entitätsfeld. Abhängigkeitsanalyse und
+Entity-ID-Umbenennungen sind nicht Bestandteil dieser Version.
+
 ## Installation mit HACS
 
 1. In HACS **Integrationen** öffnen.

@@ -1,12 +1,20 @@
 {
   "domain": "landscape",
   "name": "HA Landscape",
-  "codeowners": ["@vothmarkus"],
+  "codeowners": [
+    "@vothmarkus"
+  ],
   "config_flow": true,
+  "dependencies": [
+    "frontend",
+    "http",
+    "panel_custom",
+    "websocket_api"
+  ],
   "documentation": "https://github.com/vothmarkus/landscape-HA",
   "integration_type": "service",
   "iot_class": "calculated",
   "issue_tracker": "https://github.com/vothmarkus/landscape-HA/issues",
   "requirements": [],
-  "version": "0.1.1"
+  "version": "0.2.0"
 }

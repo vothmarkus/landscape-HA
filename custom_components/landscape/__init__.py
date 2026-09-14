@@ -8,6 +8,8 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, ServiceCall
 from homeassistant.helpers.service import async_register_admin_service
 
+from .assist import AssistOptimizer
+from .assist_api import async_setup_panel, async_unload_panel
 from .const import (
     CSV_FILENAME,
     DOMAIN,
@@ -23,8 +25,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up HA Landscape from a config entry."""
     exporter = LandscapeExporter(hass)
     await exporter.async_initialize()
+    exporter.assist = AssistOptimizer(hass, entry.entry_id)
+    await exporter.assist.async_initialize()
 
     hass.data.setdefault(DOMAIN, {})[entry.entry_id] = exporter
+    await async_setup_panel(hass, entry.entry_id)
 
     async def async_handle_export(_call: ServiceCall) -> None:
         """Handle a manual CSV export."""
@@ -45,6 +50,7 @@ async def async_remove_entry(hass: HomeAssistant, _entry: ConfigEntry) -> None:
     """Remove a leftover public export when the integration is deleted."""
     path = Path(hass.config.path("www", CSV_FILENAME))
     await hass.async_add_executor_job(delete_csv, path)
+    await AssistOptimizer(hass, _entry.entry_id).async_remove()
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
@@ -55,6 +61,7 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     hass.services.async_remove(DOMAIN, SERVICE_EXPORT_CSV)
     hass.services.async_remove(DOMAIN, SERVICE_DELETE_CSV)
 
+    async_unload_panel(hass)
     domain_data = hass.data.get(DOMAIN, {})
     domain_data.pop(entry.entry_id, None)
     if not domain_data:
