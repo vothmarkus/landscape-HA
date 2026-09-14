@@ -42,6 +42,7 @@ class LandscapeAssistPanel extends HTMLElement {
       'td small{display:block;margin-top:5px;overflow-wrap:anywhere}.conflict{color:var(--error-color,#b00020)}.unchanged{opacity:.65}.status{white-space:pre-line;overflow-wrap:anywhere;padding:12px;border-radius:8px;background:var(--secondary-background-color,#eee);margin-bottom:16px}' +
       '.reason{max-width:340px;min-width:190px;overflow-wrap:anywhere}[hidden]{display:none!important}details{margin-top:8px}summary{cursor:pointer}button:focus-visible,input:focus-visible{outline:3px solid var(--primary-color)}' +
       '@media(max-width:700px){.steps{grid-template-columns:1fr}main{padding:16px 12px}section{padding:14px}td,th{padding:10px 6px}.actions button{flex:1}h1{font-size:20px}}' +
+      '@media(max-width:700px){table,tbody{display:block;width:100%}thead{display:none}tr{display:grid;grid-template-columns:28px minmax(0,1fr);border:1px solid var(--divider-color,#ddd);border-radius:8px;padding:10px;margin:10px 0}td{display:block;grid-column:2;border:0;padding:5px 0;min-width:0;overflow-wrap:anywhere}td:first-child{grid-column:1;grid-row:1 / 7}td:nth-child(2){font-weight:600}td:nth-child(n+3)::before{content:attr(data-label);display:block;font-size:12px;color:var(--secondary-text-color);font-weight:600;margin-bottom:3px}td.reason{min-width:0;max-width:none}.scroll{max-height:70vh;overflow-y:auto;overflow-x:hidden}}' +
       '</style>' +
       '<header><button id="menu" aria-label="Seitenmenü öffnen">☰</button><h1>Landscape Assist</h1></header>' +
       '<main><p>Optimiere Namen, Aliase und Assist-Freigaben mit einer Datei aus ChatGPT. Du prüfst und wählst die Änderungen vor der Übernahme aus.</p>' +
@@ -274,6 +275,8 @@ class LandscapeAssistPanel extends HTMLElement {
         reason.append(details);
       }
       row.append(reason);
+      const labels = ["Auswahl", "Entität / Bereich", "Änderung", "Aktuell", "Vorschlag", "Begründung / Status"];
+      Array.from(row.cells).forEach((cell, index) => { cell.dataset.label = labels[index]; });
       fragment.append(row);
     }
     body.append(fragment);
