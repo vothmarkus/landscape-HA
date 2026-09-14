@@ -34,9 +34,29 @@ ATTRIBUTE_KEYS = (
     "step",
 )
 SAFE_STATES = {
-    "on", "off", "unknown", "unavailable", "open", "closed", "opening", "closing",
-    "locked", "unlocked", "locking", "unlocking", "idle", "playing", "paused",
-    "heat", "cool", "auto", "heat_cool", "dry", "fan_only", "cleaning", "docked",
+    "on",
+    "off",
+    "unknown",
+    "unavailable",
+    "open",
+    "closed",
+    "opening",
+    "closing",
+    "locked",
+    "unlocked",
+    "locking",
+    "unlocking",
+    "idle",
+    "playing",
+    "paused",
+    "heat",
+    "cool",
+    "auto",
+    "heat_cool",
+    "dry",
+    "fan_only",
+    "cleaning",
+    "docked",
 }
 
 
@@ -78,10 +98,19 @@ def collect_snapshot(hass: HomeAssistant) -> dict[str, Any]:
         attributes = state.attributes if state else {}
         device_id = entry.device_id if entry else None
         device = devices.async_get(device_id) if device_id else None
+        parent_id = getattr(device, "parent_device_id", None)
+        physical_device = devices.async_get(parent_id) if parent_id else device
+        device_area_id = (
+            device.area_id or (physical_device.area_id if physical_device else None)
+            if device
+            else None
+        )
         area_id = entry.area_id if entry else None
-        effective_area_id = area_id or (device.area_id if device else None)
+        effective_area_id = area_id or device_area_id
         area = areas.async_get_area(effective_area_id) if effective_area_id else None
-        floor = floors.async_get_floor(area.floor_id) if area and area.floor_id else None
+        floor = (
+            floors.async_get_floor(area.floor_id) if area and area.floor_id else None
+        )
         registry_name = entry.name if entry else None
         original_name = entry.original_name if entry else None
         name = registry_name
@@ -109,11 +138,16 @@ def collect_snapshot(hass: HomeAssistant) -> dict[str, Any]:
                 "device_id": device_id,
                 "device": {
                     "name": (device.name_by_user or device.name) if device else None,
-                    "manufacturer": device.manufacturer if device else None,
-                    "model": device.model if device else None,
-                    "area_id": device.area_id if device else None,
+                    "manufacturer": (
+                        physical_device.manufacturer if physical_device else None
+                    ),
+                    "model": physical_device.model if physical_device else None,
+                    "area_id": device_area_id,
+                    "parent_device_id": parent_id,
                 },
-                "integration": config.domain if config else (entry.platform if entry else None),
+                "integration": config.domain
+                if config
+                else (entry.platform if entry else None),
                 "area_id": area_id,
                 "effective_area_id": effective_area_id,
                 "area": area.name if area else None,
@@ -126,9 +160,13 @@ def collect_snapshot(hass: HomeAssistant) -> dict[str, Any]:
                 "exposed_to_assist": exposed,
                 "disabled": bool(entry and entry.disabled_by is not None),
                 "hidden": bool(entry and entry.hidden_by is not None),
-                "entity_category": str(entry.entity_category) if entry and entry.entity_category else None,
+                "entity_category": str(entry.entity_category)
+                if entry and entry.entity_category
+                else None,
                 "state": safe_state(state.state if state else None),
-                "attributes": {key: attributes[key] for key in ATTRIBUTE_KEYS if key in attributes},
+                "attributes": {
+                    key: attributes[key] for key in ATTRIBUTE_KEYS if key in attributes
+                },
                 "related_entity_ids": sorted(
                     item for item in siblings.get(device_id, []) if item != entity_id
                 ),
@@ -147,7 +185,9 @@ def collect_snapshot(hass: HomeAssistant) -> dict[str, Any]:
         ],
         "floors": [
             {"floor_id": floor.floor_id, "name": floor.name}
-            for floor in sorted(floors.async_list_floors(), key=lambda item: item.floor_id)
+            for floor in sorted(
+                floors.async_list_floors(), key=lambda item: item.floor_id
+            )
         ],
     }
 

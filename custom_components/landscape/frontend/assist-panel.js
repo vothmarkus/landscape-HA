@@ -266,6 +266,11 @@ class LandscapeAssistPanel extends HTMLElement {
         const list = document.createElement("p");
         list.textContent = item.affected_entity_ids.join(", ");
         details.append(summary, list);
+        if (item.additional_entity_ids && item.additional_entity_ids.length) {
+          const additional = document.createElement("p");
+          additional.textContent = "Zusätzlich bei Übernahme der Bereichsvorschläge: " + item.additional_entity_ids.join(", ");
+          details.append(additional);
+        }
         reason.append(details);
       }
       row.append(reason);

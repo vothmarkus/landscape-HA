@@ -20,7 +20,9 @@ def _object(value: Any, allowed: set[str], required: set[str]) -> None:
     if not isinstance(value, dict):
         raise PatchError("Ein JSON-Objekt wird erwartet.")
     if set(value) - allowed:
-        raise PatchError(f"Unzulässige Felder: {', '.join(sorted(set(value) - allowed))}")
+        raise PatchError(
+            f"Unzulässige Felder: {', '.join(sorted(set(value) - allowed))}"
+        )
     if required - set(value):
         raise PatchError(f"Fehlende Felder: {', '.join(sorted(required - set(value)))}")
 
@@ -35,7 +37,9 @@ def _text(value: Any, *, nullable: bool = False, limit: int = MAX_TEXT) -> None:
         or len(value) > limit
         or any(ord(char) < 32 for char in value)
     ):
-        raise PatchError(f"Text muss 1 bis {limit} Zeichen ohne Steuerzeichen enthalten.")
+        raise PatchError(
+            f"Text muss 1 bis {limit} Zeichen ohne Steuerzeichen enthalten."
+        )
 
 
 def _pair(value: Any) -> None:
@@ -107,7 +111,9 @@ def validate_patch(patch: Any) -> None:
                 target = change["entity_id"]
                 _text(target)
                 if "." not in target or len(change) < 3:
-                    raise PatchError("Eine Entitätsänderung benötigt ID und Änderungen.")
+                    raise PatchError(
+                        "Eine Entitätsänderung benötigt ID und Änderungen."
+                    )
                 for field in ("name", "area_id"):
                     if field in change:
                         _pair(change[field])
@@ -119,13 +125,19 @@ def validate_patch(patch: Any) -> None:
                     add = {item.casefold() for item in aliases.get("add", [])}
                     remove = {item.casefold() for item in aliases.get("remove", [])}
                     if not add | remove or add & remove:
-                        raise PatchError("Aliasänderungen sind leer oder widersprüchlich.")
+                        raise PatchError(
+                            "Aliasänderungen sind leer oder widersprüchlich."
+                        )
                 if "assist" in change:
                     _object(change["assist"], {"exposed"}, {"exposed"})
                     if type(change["assist"]["exposed"]) is not bool:
                         raise PatchError("assist.exposed muss true oder false sein.")
             else:
-                _object(change, {"area_id", "floor_id", "reason"}, {"area_id", "floor_id", "reason"})
+                _object(
+                    change,
+                    {"area_id", "floor_id", "reason"},
+                    {"area_id", "floor_id", "reason"},
+                )
                 target = change["area_id"]
                 _text(target)
                 _pair(change["floor_id"])
@@ -154,7 +166,12 @@ def optimization_schema() -> dict[str, Any]:
         }
 
     pair = obj({"old": nullable, "new": nullable}, ["old", "new"])
-    aliases = {"type": "array", "items": text, "uniqueItems": True, "maxItems": MAX_ALIASES}
+    aliases = {
+        "type": "array",
+        "items": text,
+        "uniqueItems": True,
+        "maxItems": MAX_ALIASES,
+    }
     reason = text | {"maxLength": 2000}
     entity_change = obj(
         {
@@ -177,7 +194,11 @@ def optimization_schema() -> dict[str, Any]:
             {
                 "schema_version": {"type": "integer", "const": SCHEMA_VERSION},
                 "source_id": text,
-                "changes": {"type": "array", "maxItems": MAX_CHANGES, "items": entity_change},
+                "changes": {
+                    "type": "array",
+                    "maxItems": MAX_CHANGES,
+                    "items": entity_change,
+                },
                 "area_changes": {
                     "type": "array",
                     "maxItems": MAX_CHANGES,

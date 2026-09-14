@@ -88,14 +88,18 @@ class AssistOptimizer:
             operations = build_preview(patch, source, collect_snapshot(self.hass))
             # One active preview per admin; expire abandoned imports.
             self._previews = {
-                key: item for key, item in self._previews.items()
-                if item["user_id"] != user_id and monotonic() - item["created"] < PREVIEW_TTL
+                key: item
+                for key, item in self._previews.items()
+                if item["user_id"] != user_id
+                and monotonic() - item["created"] < PREVIEW_TTL
             }
             if len(self._previews) >= 10:
                 self._previews.pop(next(iter(self._previews)))
             preview_id = uuid4().hex
             self._previews[preview_id] = {
-                "patch": patch, "user_id": user_id, "created": monotonic()
+                "patch": patch,
+                "user_id": user_id,
+                "created": monotonic(),
             }
             return {
                 "preview_id": preview_id,
@@ -111,7 +115,9 @@ class AssistOptimizer:
             or preview["user_id"] != user_id
             or monotonic() - preview["created"] >= PREVIEW_TTL
         ):
-            raise PatchError("Die Vorschau ist abgelaufen. Bitte die Datei erneut prüfen.")
+            raise PatchError(
+                "Die Vorschau ist abgelaufen. Bitte die Datei erneut prüfen."
+            )
         return preview
 
     def discard(self, preview_id: str, user_id: str) -> None:
@@ -161,7 +167,9 @@ class AssistOptimizer:
                 report["status"] = "applied" if operations else "unchanged"
                 report["applied_count"] = len(operations)
             except Exception as err:
-                _LOGGER.exception("Assist patch application failed; restoring attempted fields")
+                _LOGGER.exception(
+                    "Assist patch application failed; restoring attempted fields"
+                )
                 for operation, previous in reversed(attempted):
                     try:
                         if operation["field"] == "aliases":
@@ -171,9 +179,13 @@ class AssistOptimizer:
                         else:
                             self._write(operation, previous)
                     except Exception:
-                        _LOGGER.exception("Failed to restore Assist operation %s", operation["id"])
+                        _LOGGER.exception(
+                            "Failed to restore Assist operation %s", operation["id"]
+                        )
                         report["rollback_errors"].append(operation["id"])
-                report["status"] = "partial" if report["rollback_errors"] else "rolled_back"
+                report["status"] = (
+                    "partial" if report["rollback_errors"] else "rolled_back"
+                )
                 report["error"] = str(err)
             report["finished_at"] = datetime.now(UTC).isoformat()
             try:
@@ -193,7 +205,9 @@ class AssistOptimizer:
         if operation["kind"] == "area":
             area_registry.async_get(self.hass).async_update(target, floor_id=value)
         elif field == "assist":
-            exposed_entities.async_expose_entity(self.hass, "conversation", target, value)
+            exposed_entities.async_expose_entity(
+                self.hass, "conversation", target, value
+            )
         else:
             registry = entity_registry.async_get(self.hass)
             if field == "aliases":

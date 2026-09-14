@@ -7,9 +7,17 @@ from typing import Any
 from .assist_schema import PatchError, validate_patch
 
 ENTITY_CONTEXT = (
-    "registry_id", "device_id", "device", "original_name", "has_automatic_alias",
-    "effective_area_id", "area",
-    "floor_id", "floor", "disabled", "hidden",
+    "registry_id",
+    "device_id",
+    "device",
+    "original_name",
+    "has_automatic_alias",
+    "effective_area_id",
+    "area",
+    "floor_id",
+    "floor",
+    "disabled",
+    "hidden",
 )
 
 
@@ -83,18 +91,33 @@ def build_preview(
         elif any(old.get(key) != now.get(key) for key in ENTITY_CONTEXT):
             conflict = "Identität, Gerät oder räumlicher Kontext wurde geändert."
         now = now or old
-        if old["registry_id"] is None and set(change) - {"entity_id", "assist", "reason"}:
-            raise PatchError(f"{target}: ohne Registry-Eintrag nur Assist-Freigabe änderbar.")
+        if old["registry_id"] is None and set(change) - {
+            "entity_id",
+            "assist",
+            "reason",
+        }:
+            raise PatchError(
+                f"{target}: ohne Registry-Eintrag nur Assist-Freigabe änderbar."
+            )
         reason = change["reason"]
         label = old["friendly_name"]
 
         if "name" in change:
             pair = change["name"]
             if pair["old"] != old["name"]:
-                raise PatchError(f"{target}: name.old stimmt nicht mit dem Export überein.")
+                raise PatchError(
+                    f"{target}: name.old stimmt nicht mit dem Export überein."
+                )
             append(
-                "entity", target, "name", old["registry_name"], pair["new"],
-                now["registry_name"], reason, conflict, label=label,
+                "entity",
+                target,
+                "name",
+                old["registry_name"],
+                pair["new"],
+                now["registry_name"],
+                reason,
+                conflict,
+                label=label,
                 display_before=old["name"],
             )
 
@@ -104,7 +127,9 @@ def build_preview(
             for action in ("add", "remove"):
                 for index, alias in enumerate(change["aliases"].get(action, [])):
                     if action == "remove" and alias not in old_aliases:
-                        raise PatchError(f"{target}: zu entfernender Alias fehlt: {alias}")
+                        raise PatchError(
+                            f"{target}: zu entfernender Alias fehlt: {alias}"
+                        )
                     alias_conflict = conflict
                     if current_aliases != old_aliases:
                         # An already-applied alias operation remains a harmless no-op.
@@ -112,16 +137,26 @@ def build_preview(
                         if (alias in current_aliases) != desired:
                             alias_conflict = "Aliase wurden seit dem Export geändert."
                     append(
-                        "entity", target, "aliases", alias in old_aliases,
-                        action == "add", alias in current_aliases, reason,
-                        alias_conflict, label=label, suffix=f"/{action}/{index}",
-                        alias=alias, action=action,
+                        "entity",
+                        target,
+                        "aliases",
+                        alias in old_aliases,
+                        action == "add",
+                        alias in current_aliases,
+                        reason,
+                        alias_conflict,
+                        label=label,
+                        suffix=f"/{action}/{index}",
+                        alias=alias,
+                        action=action,
                     )
 
         if "area_id" in change:
             pair = change["area_id"]
             if pair["old"] != old["area_id"]:
-                raise PatchError(f"{target}: area_id.old stimmt nicht mit dem Export überein.")
+                raise PatchError(
+                    f"{target}: area_id.old stimmt nicht mit dem Export überein."
+                )
             new_area = pair["new"]
             if new_area is not None and new_area not in old_areas:
                 raise PatchError(f"Unbekannter Zielbereich im Export: {new_area}")
@@ -131,10 +166,21 @@ def build_preview(
                     "Der Zielbereich wurde inzwischen geändert oder gelöscht."
                 )
             append(
-                "entity", target, "area_id", old["area_id"], new_area, now["area_id"],
-                reason, area_conflict, label=label,
-                display_before=(old_areas.get(old["area_id"]) or {}).get("name", "Vom Gerät erben"),
-                display_after=(old_areas.get(new_area) or {}).get("name", "Vom Gerät erben"),
+                "entity",
+                target,
+                "area_id",
+                old["area_id"],
+                new_area,
+                now["area_id"],
+                reason,
+                area_conflict,
+                label=label,
+                display_before=(old_areas.get(old["area_id"]) or {}).get(
+                    "name", "Vom Gerät erben"
+                ),
+                display_after=(old_areas.get(new_area) or {}).get(
+                    "name", "Vom Gerät erben"
+                ),
             )
 
         if "assist" in change:
@@ -145,8 +191,15 @@ def build_preview(
                     "Deaktivierte Entitäten können hier nicht freigegeben werden."
                 )
             append(
-                "entity", target, "assist", old["exposed_to_assist"], desired,
-                now["exposed_to_assist"], reason, exposure_conflict, label=label,
+                "entity",
+                target,
+                "assist",
+                old["exposed_to_assist"],
+                desired,
+                now["exposed_to_assist"],
+                reason,
+                exposure_conflict,
+                label=label,
             )
 
     for change in patch.get("area_changes", []):
@@ -157,7 +210,9 @@ def build_preview(
         now = areas.get(target)
         pair = change["floor_id"]
         if pair["old"] != old["floor_id"]:
-            raise PatchError(f"{target}: floor_id.old stimmt nicht mit dem Export überein.")
+            raise PatchError(
+                f"{target}: floor_id.old stimmt nicht mit dem Export überein."
+            )
         new_floor = pair["new"]
         if new_floor is not None and new_floor not in old_floors:
             raise PatchError(f"Unbekannte Zieletage im Export: {new_floor}")
@@ -167,20 +222,41 @@ def build_preview(
         elif new_floor is not None and floors.get(new_floor) != old_floors[new_floor]:
             conflict = "Zieletage wurde geändert oder gelöscht."
         affected = sorted(
-            item["entity_id"] for item in current["entities"]
+            item["entity_id"]
+            for item in current["entities"]
             if item["effective_area_id"] == target
         )
         old_affected = sorted(
-            item["entity_id"] for item in source["entities"]
+            item["entity_id"]
+            for item in source["entities"]
             if item["effective_area_id"] == target
         )
         if affected != old_affected:
             conflict = "Die dem Bereich zugeordneten Entitäten wurden geändert."
         append(
-            "area", target, "floor_id", old["floor_id"], new_floor,
-            now["floor_id"] if now else None, change["reason"], conflict,
-            label=old["name"], affected_entity_ids=affected,
-            display_before=(old_floors.get(old["floor_id"]) or {}).get("name", "Keine Etage"),
+            "area",
+            target,
+            "floor_id",
+            old["floor_id"],
+            new_floor,
+            now["floor_id"] if now else None,
+            change["reason"],
+            conflict,
+            label=old["name"],
+            affected_entity_ids=affected,
+            additional_entity_ids=sorted(
+                item["target"]
+                for item in operations
+                if item["kind"] == "entity"
+                and item["field"] == "area_id"
+                and item["status"] == "ready"
+                and (item["after"] or original[item["target"]]["device"].get("area_id"))
+                == target
+                and item["target"] not in affected
+            ),
+            display_before=(old_floors.get(old["floor_id"]) or {}).get(
+                "name", "Keine Etage"
+            ),
             display_after=(old_floors.get(new_floor) or {}).get("name", "Keine Etage"),
         )
     return operations

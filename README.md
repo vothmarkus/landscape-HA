@@ -8,6 +8,8 @@ HA Landscape erstellt auf Knopfdruck eine vollständige CSV-Bestandsaufnahme
 der Entitäten einer Home-Assistant-Installation. Die Datei eignet sich unter
 anderem dazu, einem KI-Assistenten den vorhandenen Aufbau für die Erstellung
 passender Automatisierungen zu übergeben.
+Zusätzlich lassen sich Namen, Aliase und Assist-Freigaben über einen geprüften
+Dateiaustausch mit ChatGPT optimieren und gezielt übernehmen.
 
 ## Funktionen
 

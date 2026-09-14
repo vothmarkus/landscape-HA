@@ -7,7 +7,6 @@ from pathlib import Path
 from typing import Any
 
 import voluptuous as vol
-
 from homeassistant.components import frontend, panel_custom, websocket_api
 from homeassistant.components.http import StaticPathConfig
 from homeassistant.core import HomeAssistant
@@ -26,11 +25,13 @@ async def async_setup_panel(hass: HomeAssistant, entry_id: str) -> None:
     """Register public code only; inventory and imports require admin authentication."""
     if not hass.data.get(DATA_REGISTERED):
         await hass.http.async_register_static_paths(
-            [StaticPathConfig(
-                STATIC_URL,
-                str(Path(__file__).parent / "frontend" / "assist-panel.js"),
-                False,
-            )]
+            [
+                StaticPathConfig(
+                    STATIC_URL,
+                    str(Path(__file__).parent / "frontend" / "assist-panel.js"),
+                    False,
+                )
+            ]
         )
         websocket_api.async_register_command(hass, websocket_assist)
         hass.data[DATA_REGISTERED] = True
@@ -55,7 +56,9 @@ def async_unload_panel(hass: HomeAssistant) -> None:
     {
         vol.Required("type"): "landscape/assist",
         vol.Required("entry_id"): str,
-        vol.Required("action"): vol.In(["status", "export", "preview", "apply", "discard"]),
+        vol.Required("action"): vol.In(
+            ["status", "export", "preview", "apply", "discard"]
+        ),
         vol.Optional("patch"): str,
         vol.Optional("preview_id"): str,
         vol.Optional("selected"): [str],
@@ -70,7 +73,9 @@ async def websocket_assist(
     exporter = hass.data.get(DOMAIN, {}).get(msg["entry_id"])
     optimizer: AssistOptimizer | None = getattr(exporter, "assist", None)
     if optimizer is None:
-        connection.send_error(msg["id"], "not_loaded", "HA Landscape ist nicht geladen.")
+        connection.send_error(
+            msg["id"], "not_loaded", "HA Landscape ist nicht geladen."
+        )
         return
     user_id = connection.user.id
     action = msg["action"]
@@ -99,7 +104,8 @@ async def websocket_assist(
     except Exception:
         _LOGGER.exception("Landscape Assist command failed: %s", action)
         connection.send_error(
-            msg["id"], "assist_error",
+            msg["id"],
+            "assist_error",
             "Die Aktion ist fehlgeschlagen. "
             "Details stehen im Home-Assistant-Protokoll.",
         )

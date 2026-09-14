@@ -17,7 +17,9 @@ from custom_components.landscape.assist_snapshot import build_archive, safe_stat
 def test_zip_contains_self_describing_round_trip(source: dict) -> None:
     with zipfile.ZipFile(io.BytesIO(build_archive(source))) as archive:
         assert set(archive.namelist()) == {
-            "landscape.json", "optimization_schema.json", "CHATGPT_INSTRUCTIONS.md"
+            "landscape.json",
+            "optimization_schema.json",
+            "CHATGPT_INSTRUCTIONS.md",
         }
         assert json.loads(archive.read("landscape.json")) == source
         schema = json.loads(archive.read("optimization_schema.json"))
@@ -38,32 +40,38 @@ def test_selective_apply_and_state_changes(source: dict, patch: dict) -> None:
     assert chosen[0]["after"] is True
 
 
-@pytest.mark.parametrize("raw", [
-    '{"schema_version":true,"source_id":"x","changes":[]}',
-    '{"schema_version":1,"source_id":"x","source_id":"y","changes":[]}',
-    '{"schema_version":1,"source_id":"x","changes":[],"service":"light.turn_on"}',
-    '{"schema_version":NaN,"source_id":"x","changes":[]}',
-    '[]',
-    'not json',
-])
+@pytest.mark.parametrize(
+    "raw",
+    [
+        '{"schema_version":true,"source_id":"x","changes":[]}',
+        '{"schema_version":1,"source_id":"x","source_id":"y","changes":[]}',
+        '{"schema_version":1,"source_id":"x","changes":[],"service":"light.turn_on"}',
+        '{"schema_version":NaN,"source_id":"x","changes":[]}',
+        "[]",
+        "not json",
+    ],
+)
 def test_invalid_json_is_rejected(raw: str) -> None:
     with pytest.raises(PatchError):
         parse_patch(raw)
 
 
-@pytest.mark.parametrize("edit", [
-    {"new_entity_id": "light.renamed"},
-    {"device_id": "other-device"},
-    {"name": {"old": "Decke", "new": ""}},
-    {"name": {"old": "Decke", "new": " Decke"}},
-    {"name": {"old": "Decke", "new": "a\nb"}},
-    {"assist": {"exposed": "false"}},
-    {"assist": {"exposed": 1}},
-    {"aliases": {"add": ["Lampe", "lampe"]}},
-    {"aliases": {"add": ["Lampe"], "remove": ["lampe"]}},
-    {"aliases": {"add": []}},
-    {"aliases": {"add": ["Lamp"] * 101}},
-])
+@pytest.mark.parametrize(
+    "edit",
+    [
+        {"new_entity_id": "light.renamed"},
+        {"device_id": "other-device"},
+        {"name": {"old": "Decke", "new": ""}},
+        {"name": {"old": "Decke", "new": " Decke"}},
+        {"name": {"old": "Decke", "new": "a\nb"}},
+        {"assist": {"exposed": "false"}},
+        {"assist": {"exposed": 1}},
+        {"aliases": {"add": ["Lampe", "lampe"]}},
+        {"aliases": {"add": ["Lampe"], "remove": ["lampe"]}},
+        {"aliases": {"add": []}},
+        {"aliases": {"add": ["Lamp"] * 101}},
+    ],
+)
 def test_unknown_fields_and_invalid_values(patch: dict, edit: dict) -> None:
     patch["changes"][0].update(edit)
     with pytest.raises(PatchError):
@@ -96,13 +104,18 @@ def test_wrong_old_and_duplicate_target(source: dict, patch: dict) -> None:
         parse_patch(json.dumps(patch))
 
 
-@pytest.mark.parametrize("key,value", [
-    ("registry_id", "replacement-entity"),
-    ("device_id", "other-device"),
-    ("area", "New room name"),
-    ("disabled", True),
-])
-def test_changed_context_blocks_all_fields(source: dict, patch: dict, key: str, value) -> None:
+@pytest.mark.parametrize(
+    "key,value",
+    [
+        ("registry_id", "replacement-entity"),
+        ("device_id", "other-device"),
+        ("area", "New room name"),
+        ("disabled", True),
+    ],
+)
+def test_changed_context_blocks_all_fields(
+    source: dict, patch: dict, key: str, value
+) -> None:
     current = copy.deepcopy(source)
     current["entities"][0][key] = value
     operations = build_preview(patch, source, current)
@@ -125,7 +138,9 @@ def test_stale_name_does_not_block_independent_alias(source: dict, patch: dict) 
 def test_replay_is_a_noop(source: dict, patch: dict) -> None:
     current = copy.deepcopy(source)
     current["entities"][0].update(
-        registry_name="Deckenlicht", aliases=["Licht an der Decke"], exposed_to_assist=False
+        registry_name="Deckenlicht",
+        aliases=["Licht an der Decke"],
+        exposed_to_assist=False,
     )
     operations = build_preview(patch, source, current)
     assert all(item["status"] == "unchanged" for item in operations)
@@ -143,16 +158,22 @@ def test_unregistered_entity_allows_only_exposure(source: dict, patch: dict) -> 
 
 def test_area_inheritance_and_floor_scope(source: dict) -> None:
     patch = {
-        "schema_version": 1, "source_id": source["source_id"],
-        "changes": [{
-            "entity_id": "light.ceiling",
-            "area_id": {"old": None, "new": "bedroom"},
-            "reason": "Explizit zuordnen.",
-        }],
-        "area_changes": [{
-            "area_id": "bedroom", "floor_id": {"old": "upper", "new": "ground"},
-            "reason": "Bereich liegt im Erdgeschoss.",
-        }],
+        "schema_version": 1,
+        "source_id": source["source_id"],
+        "changes": [
+            {
+                "entity_id": "light.ceiling",
+                "area_id": {"old": None, "new": "bedroom"},
+                "reason": "Explizit zuordnen.",
+            }
+        ],
+        "area_changes": [
+            {
+                "area_id": "bedroom",
+                "floor_id": {"old": "upper", "new": "ground"},
+                "reason": "Bereich liegt im Erdgeschoss.",
+            }
+        ],
     }
     operations = build_preview(patch, source, source)
     assert operations[0]["before"] is None
@@ -173,9 +194,16 @@ def test_selection_must_be_explicit_and_known(source: dict, patch: dict) -> None
             select_operations(operations, selected)
 
 
-@pytest.mark.parametrize("value,expected", [
-    ("off", "off"), ("21.5", "21.5"), (None, None), ("nan", None),
-    ("https://example.org?token=secret", None), ("private-message", None),
-])
+@pytest.mark.parametrize(
+    "value,expected",
+    [
+        ("off", "off"),
+        ("21.5", "21.5"),
+        (None, None),
+        ("nan", None),
+        ("https://example.org?token=secret", None),
+        ("private-message", None),
+    ],
+)
 def test_reduced_states(value, expected) -> None:
     assert safe_state(value) == expected

@@ -28,6 +28,7 @@ def test_real_registry_round_trip(tmp_path) -> None:
         hass = HomeAssistant(str(tmp_path))
         await floor_registry.async_load(hass)
         await area_registry.async_load(hass)
+        device_registry.async_setup(hass)
         await device_registry.async_load(hass)
         await entity_registry.async_load(hass)
         exposure = ExposedEntities(hass)
@@ -40,17 +41,24 @@ def test_real_registry_round_trip(tmp_path) -> None:
             "Schlafzimmer", floor_id=floor.floor_id
         )
         entry = registry.async_get_or_create(
-            "light", "test", "ceiling",
-            original_name="Decke", suggested_object_id="ceiling"
+            "light",
+            "test",
+            "ceiling",
+            original_name="Decke",
+            suggested_object_id="ceiling",
         )
         computed = getattr(entity_registry, "COMPUTED_NAME", None)
         aliases = [computed, "Deckenlampe"] if computed is not None else ["Deckenlampe"]
         registry.async_update_entity(entry.entity_id, aliases=aliases, area_id=area.id)
-        hass.states.async_set(entry.entity_id, "off", {
-            "friendly_name": "Schlafzimmer Decke",
-            "supported_color_modes": ["brightness"],
-            "access_token": "must-not-be-exported",
-        })
+        hass.states.async_set(
+            entry.entity_id,
+            "off",
+            {
+                "friendly_name": "Schlafzimmer Decke",
+                "supported_color_modes": ["brightness"],
+                "access_token": "must-not-be-exported",
+            },
+        )
         async_expose_entity(hass, "conversation", entry.entity_id, True)
         async_expose_entity(hass, "cloud.alexa", entry.entity_id, True)
         snapshot = collect_snapshot(hass)
@@ -61,18 +69,22 @@ def test_real_registry_round_trip(tmp_path) -> None:
         patch = {
             "schema_version": 1,
             "source_id": snapshot["source_id"],
-            "changes": [{
-                "entity_id": entry.entity_id,
-                "name": {"old": "Decke", "new": "Deckenlicht"},
-                "aliases": {"add": ["Licht an der Decke"]},
-                "assist": {"exposed": False},
-                "reason": "Vom Ambientelicht unterscheiden.",
-            }],
-            "area_changes": [{
-                "area_id": area.id,
-                "floor_id": {"old": floor.floor_id, "new": ground.floor_id},
-                "reason": "Etage korrigieren.",
-            }],
+            "changes": [
+                {
+                    "entity_id": entry.entity_id,
+                    "name": {"old": "Decke", "new": "Deckenlicht"},
+                    "aliases": {"add": ["Licht an der Decke"]},
+                    "assist": {"exposed": False},
+                    "reason": "Vom Ambientelicht unterscheiden.",
+                }
+            ],
+            "area_changes": [
+                {
+                    "area_id": area.id,
+                    "floor_id": {"old": floor.floor_id, "new": ground.floor_id},
+                    "reason": "Etage korrigieren.",
+                }
+            ],
         }
         preview = await manager.async_preview(json.dumps(patch), "admin")
         report = await manager.async_apply(
@@ -85,7 +97,11 @@ def test_real_registry_round_trip(tmp_path) -> None:
         assert list(changed.aliases) == [*aliases, "Licht an der Decke"]
         assert async_should_expose(hass, "conversation", entry.entity_id) is False
         assert async_should_expose(hass, "cloud.alexa", entry.entity_id) is True
-        assert area_registry.async_get(hass).async_get_area(area.id).floor_id == ground.floor_id
+        assert (
+            area_registry.async_get(hass).async_get_area(area.id).floor_id
+            == ground.floor_id
+        )
         await manager.async_remove()
         await hass.async_stop(force=True)
+
     asyncio.run(scenario())
