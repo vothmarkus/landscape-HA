@@ -44,6 +44,29 @@ def json_bytes(value) -> bytes:
     return json.dumps(value, ensure_ascii=False, indent=2).encode("utf-8")
 
 
+def filename_candidates(name: str, paths: list[str]) -> tuple[list[str], str]:
+    """Rank whole filename terms; only a unique best match is preselected."""
+    basename = PurePosixPath(name).name
+    exact = sorted(path for path in paths if PurePosixPath(path).name == basename)
+    if exact:
+        return exact, exact[0] if len(exact) == 1 else ""
+
+    def words(path: str) -> list[str]:
+        return re.findall(r"[^\W_]+", PurePosixPath(path).stem.casefold())
+
+    incoming = " " + " ".join(words(name)) + " "
+    scores = {}
+    for path in paths:
+        terms = words(path)
+        if terms and " " + " ".join(terms) + " " in incoming:
+            scores[path] = sum(len(term) for term in terms)
+    ranked = sorted(scores, key=lambda path: (-scores[path], path))
+    if not ranked:
+        return [], ""
+    best = [path for path in ranked if scores[path] == scores[ranked[0]]]
+    return ranked, best[0] if len(best) == 1 else ""
+
+
 class ConfigurationFiles:
     """All filesystem methods run in HA's executor."""
 
@@ -199,7 +222,7 @@ class ConfigurationFiles:
         }
 
     def inspect(self, uploads: list[dict], archive: str | None = None) -> dict:
-        """Resolve candidates; ambiguous basenames always require an explicit target."""
+        """Suggest existing targets without guessing between equally good names."""
         if archive:
             if uploads:
                 raise ConfigurationError("Bitte ZIP oder einzelne Dateien auswählen.")
@@ -259,37 +282,24 @@ class ConfigurationFiles:
             raise ConfigurationError("Der Import enthält keine YAML-Dateien.")
         details, result = describe(current), []
         for name, content in yaml_files:
-            base = re.sub(
-                r"_\d{4}-\d{2}-\d{2}(?=\.ya?ml$)", "", PurePosixPath(name).name
-            )
-            matches = sorted(
-                path for path in current if PurePosixPath(path).name == base
-            )
-            contexts = [
-                path
-                for path in metadata
-                if path == name
-                or ("/" not in name and PurePosixPath(path).name == base)
-            ]
-            target = (
-                contexts[0]
-                if len(contexts) == 1
-                else name
-                if "/" in name
-                else matches[0]
-                if len(matches) == 1
-                else name
-                if not matches
-                else ""
-            )
+            matches, suggestion = filename_candidates(name, list(current))
+            if archive or "/" in name:
+                # Archive paths must round-trip, including files at the root.
+                target = name
+                suggested_path = None
+            else:
+                _, context_target = filename_candidates(name, list(metadata))
+                target = context_target or suggestion or (name if not matches else "")
+                suggested_path = suggestion if not context_target else None
             info = metadata.get(target, {})
             result.append(
                 {
                     "filename": name,
                     "path": target,
                     "content": content,
-                    "mode": "replace" if target in current else "create",
+                    "mode": "replace" if target in current or not target else "create",
                     "candidates": matches,
+                    "suggested_path": suggested_path,
                     "type": details.get(target, {}).get("type", "yaml"),
                     "source_sha256": info.get("source_sha256"),
                     "source_path": info.get("path"),

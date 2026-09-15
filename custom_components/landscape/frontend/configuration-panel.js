@@ -26,7 +26,7 @@ class LandscapeConfigurationPanel extends HTMLElement {
         .error{color:var(--error-color,#b00020)}.tree{max-height:55vh;overflow:auto;margin-top:12px}details{margin:8px 0}summary{cursor:pointer;padding:8px 0;overflow-wrap:anywhere}
         .folder{padding-left:16px;border-left:1px solid var(--divider-color,#ddd)}.file{display:flex;gap:10px;align-items:flex-start;padding:12px 0;border-bottom:1px solid var(--divider-color,#ddd)}
         .file-name{flex:1;min-width:130px;overflow-wrap:anywhere}.file .actions{margin:0}.file button{padding:7px 10px;font-size:13px}
-        .import{padding:12px 0;border-bottom:1px solid var(--divider-color,#ddd)}.import label{display:block;margin:10px 0}.import input[type=text]{width:100%;margin-top:6px}.import select{max-width:100%}
+        .import{padding:12px 0;border-bottom:1px solid var(--divider-color,#ddd);overflow-wrap:anywhere}.import label{display:block;margin:10px 0}.import input[type=text],.import select{display:block;width:100%;min-width:0;max-width:100%;margin-top:6px}
         pre{margin:12px 0;white-space:pre;overflow:auto;max-height:52vh;padding:16px;font:13px/1.6 ui-monospace,monospace;background:var(--secondary-background-color,#eef2f4);border-radius:8px}
         .diff-add{color:var(--success-color,#18783e)}.diff-remove{color:var(--error-color,#b00020)}.diff-hunk{color:var(--primary-color,#007c91)}
         [hidden]{display:none!important}button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid var(--primary-color,#007c91)}
@@ -116,7 +116,7 @@ class LandscapeConfigurationPanel extends HTMLElement {
   async _refresh() {
     const result = await this._call("list"); this._files = result.files;
     this._selected = new Set([...this._selected].filter(path => this._files.some(file => file.path === path)));
-    this._renderTree(); this._renderBackups(result.backups || []);
+    this._renderTree(); this._renderImports(); this._renderBackups(result.backups || []);
     if (result.skipped?.length) this._show("Nicht lesbare oder ausgeschlossene Dateien:\n" + result.skipped.join("\n"), true);
   }
   _renderTree() {
@@ -181,7 +181,7 @@ class LandscapeConfigurationPanel extends HTMLElement {
       fields = { archive: btoa(binary) };
     } else fields = { files: await Promise.all(files.map(async file => ({ filename: file.name, content: await file.text() }))) };
     const result = await this._call("inspect", fields);
-    if (target && result.files.length === 1) { result.files[0].path = target; result.files[0].mode = "replace"; }
+    if (target && result.files.length === 1) { result.files[0].path = target; result.files[0].mode = "replace"; result.files[0].suggested_path = null; }
     this._imports = result.files.map(file => ({ ...file, selected: true }));
     this._renderImports(); this._show("Importziel und Importart prüfen, dann den Diff öffnen.");
   }
@@ -193,8 +193,23 @@ class LandscapeConfigurationPanel extends HTMLElement {
       const choice = document.createElement("input"); choice.type = "checkbox"; choice.checked = file.selected;
       choice.setAttribute("aria-label", file.filename + " importieren"); choice.onchange = () => { file.selected = choice.checked; this._clearPreview(); };
       const title = document.createElement("strong"); title.textContent = " " + file.filename;
+      const existing = document.createElement("label"); existing.textContent = "Vorhandene Zieldatei";
+      const targets = document.createElement("select"); targets.setAttribute("aria-label", "Zieldatei für " + file.filename);
+      const placeholder = document.createElement("option"); placeholder.value = ""; placeholder.textContent = "Zieldatei wählen oder Pfad unten eingeben"; placeholder.disabled = true; targets.append(placeholder);
+      const candidates = file.candidates || [];
+      const paths = this._files.map(item => item.path);
+      const matching = candidates.filter(path => paths.includes(path));
+      for (const [name, items] of [["Passende Dateinamen", matching], [matching.length ? "Weitere YAML-Dateien" : "YAML-Dateien", paths.filter(path => !matching.includes(path)).sort()]]) {
+        if (!items.length) continue;
+        const group = document.createElement("optgroup"); group.label = name;
+        for (const path of items) {
+          const option = document.createElement("option"); option.value = path; option.textContent = "/config/" + path; group.append(option);
+        }
+        targets.append(group);
+      }
+      existing.append(targets);
       const target = document.createElement("label"); target.append(document.createTextNode("Ziel unter /config (relativer Pfad)"));
-      const input = document.createElement("input"); input.type = "text"; input.value = file.path; input.placeholder = "packages/stromzaehler_neu.yaml"; target.append(input);
+      const input = document.createElement("input"); input.type = "text"; input.value = file.path; input.placeholder = "packages/stromzaehler_neu.yaml"; input.setAttribute("aria-label", "Zielpfad für " + file.filename); target.append(input);
       const label = document.createElement("label"); label.textContent = "Importart ";
       const select = document.createElement("select"); select.setAttribute("aria-label", "Importart für " + file.filename);
       for (const [value, text] of [["replace", "Datei ersetzen"], ["create", "Als neue Datei importieren"], ["merge", "Einträge zusammenführen (IDs / Skriptschlüssel)"]]) {
@@ -203,9 +218,13 @@ class LandscapeConfigurationPanel extends HTMLElement {
       select.value = file.mode;
       const note = document.createElement("small");
       const updateNote = () => {
-        note.textContent = !file.path ? "Mehrdeutiger Dateiname. Ziel auswählen: " + file.candidates.join(", ") : file.mode === "merge" ? "Passende Einträge werden vollständig ersetzt, neue ergänzt und übrige beibehalten. Kommentare innerhalb ersetzter Einträge stammen aus dem Import." : "";
+        const notes = [];
+        if (!file.path) notes.push(candidates.length > 1 && !file.suggested_path ? "Mehrere gleich gute Treffer. Bitte die Zieldatei im Dropdown auswählen." : "Bitte eine Zieldatei auswählen oder einen neuen Zielpfad eingeben.");
+        else if (file.suggested_path === file.path && file.mode !== "create") notes.push("Nach Dateiname vorausgewählt: /config/" + file.path);
+        if (file.mode === "merge") notes.push("Passende Einträge werden vollständig ersetzt, neue ergänzt und übrige beibehalten. Kommentare innerhalb ersetzter Einträge stammen aus dem Import.");
         const stale = !file.source_matches && file.source_path === file.path;
-        if (stale) note.textContent += " Die Datei wurde seit dem Kontext-Export geändert.";
+        if (stale) notes.push("Die Datei wurde seit dem Kontext-Export geändert.");
+        note.textContent = notes.join(" ");
         note.classList.toggle("error", stale); note.hidden = !note.textContent;
       };
       const updateMerge = () => {
@@ -213,9 +232,17 @@ class LandscapeConfigurationPanel extends HTMLElement {
         const option = select.querySelector('option[value="merge"]'); option.hidden = !supported; option.disabled = !supported;
         if (!supported && file.mode === "merge") { file.mode = "replace"; select.value = "replace"; }
       };
-      updateMerge(); updateNote(); input.oninput = () => { file.path = input.value; updateMerge(); updateNote(); this._clearPreview(); };
+      const updateTarget = () => { targets.value = paths.includes(file.path) ? file.path : ""; };
+      const changeTarget = path => {
+        file.path = path; input.value = path;
+        file.mode = paths.includes(path) ? file.mode === "merge" ? "merge" : "replace" : "create";
+        select.value = file.mode; updateTarget(); updateMerge(); updateNote(); this._clearPreview();
+      };
+      updateTarget(); updateMerge(); updateNote();
+      targets.onchange = () => changeTarget(targets.value);
+      input.oninput = () => changeTarget(input.value);
       select.onchange = () => { file.mode = select.value; updateNote(); this._clearPreview(); }; label.append(select);
-      row.append(choice, title, target, label, note); container.append(row);
+      row.append(choice, title, existing, target, label, note); container.append(row);
     }
   }
   async _makePreview() {

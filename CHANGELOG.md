@@ -1,5 +1,15 @@
 # Änderungen
 
+## 0.3.1
+
+- Zusätzliches Dropdown mit allen vorhandenen YAML-Zieldateien beim Import.
+- Automatische Vorauswahl nach dem passendsten Dateinamen, auch mit Zusätzen wie
+  `configuration_blitzer_korrigiert.yaml` oder `gasmeter_neu.yaml`.
+- Passende Namen stehen zuerst; gleich gute Treffer erfordern eine eigene Auswahl.
+- Zielpfad, Importart und verfügbare Zusammenführung folgen der Zielauswahl.
+- Explizite Ziele, Kontext-Prüfsummen und ZIP-Pfade behalten Vorrang; Zieländerungen
+  erfordern weiterhin eine neue Diff-Prüfung.
+
 ## 0.3.0
 
 - Gemeinsames Landscape-Panel mit den Bereichen Assist und Configuration.
