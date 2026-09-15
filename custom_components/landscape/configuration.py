@@ -166,6 +166,8 @@ class ConfigurationWorkspace:
         ):
             seen = set()
             for _, section in config_per_platform(config, domain):
+                if not section:
+                    continue
                 if not isinstance(section, dict):
                     messages.append(f"{domain}: Zuordnung erwartet.")
                     continue

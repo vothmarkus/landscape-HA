@@ -1,5 +1,19 @@
 # Änderungen
 
+## 0.3.0
+
+- Gemeinsames Landscape-Panel mit den Bereichen Assist und Configuration.
+- YAML-Dateibaum mit Ansicht, Suche und Export als Einzeldatei, Auswahl oder Bundle.
+- Optionaler Kontext mit Include-Rolle, Referenzen und Original-Prüfsumme.
+- Import mit überprüfbarem Zielpfad, Dateiauswahl und vollständigem Diff.
+- Ersetzen, neu anlegen und Zusammenführen per Automation-/Szenen-ID oder Skriptschlüssel.
+- Unterstützung verschachtelter Includes und Packages; Prüfung der Containerform.
+- Native HA-Prüfung plus strikte Automation-/Skriptprüfung; Rücksetzung bei neuen Problemen.
+- Private Originalbackups, Journal, Konfliktprüfung und Rücksetzung mit Vorschau.
+- Wiederherstellung unterbrochener Importe; Schutz vor Browserabbrüchen.
+- YAML-Tags und Kommentare beim Export erhalten; keine Geheimnisauflösung.
+- Bestehende Assist- und CSV-Funktionen bleiben verfügbar.
+
 ## 0.2.0
 
 - Offline-Optimierung für Home Assistant Assist mit ZIP-Export und JSON-Patch.

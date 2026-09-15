@@ -182,7 +182,8 @@ class ConfigurationFiles:
             )
             if sum(len(value) for value in contents.values()) > MAX_TOTAL_BYTES:
                 raise ConfigurationError(
-                    "Export einschließlich Kontext ist größer als 2 MB; weniger Dateien auswählen."
+                    "Export einschließlich Kontext ist größer als 2 MB; "
+                    "weniger Dateien auswählen."
                 )
             buffer = io.BytesIO()
             with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as archive:
@@ -614,7 +615,8 @@ class ConfigurationFiles:
             current = self.read(item["path"])
             if digest(current) != item["after_hash"]:
                 raise ConfigurationError(
-                    f"{item['path']}: Seit diesem Import geändert; Rücksetzung gesperrt."
+                    f"{item['path']}: Seit diesem Import geändert; "
+                    "Rücksetzung gesperrt."
                 )
             content = self._backup_content(folder, item) if item["backup"] else None
             mode = (

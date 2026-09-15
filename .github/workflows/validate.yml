@@ -28,7 +28,9 @@ jobs:
         run: python -m pytest -q
       - name: Frontend syntax
         if: success() || failure()
-        run: node --check custom_components/landscape/frontend/assist-panel.js
+        run: |
+          node --check custom_components/landscape/frontend/assist-panel.js
+          node --check custom_components/landscape/frontend/configuration-panel.js
 
   hacs:
     runs-on: ubuntu-latest

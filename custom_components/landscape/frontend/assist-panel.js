@@ -12,6 +12,7 @@ class LandscapeAssistPanel extends HTMLElement {
 
   set hass(value) {
     this._hass = value;
+    if (this._configurationLoaded) this._el("configuration").hass = value;
     this._maybeLoad();
   }
   get hass() { return this._hass; }
@@ -35,7 +36,7 @@ class LandscapeAssistPanel extends HTMLElement {
       'h2{font-size:18px;margin:0 0 12px}p{line-height:1.5;margin:8px 0 16px}.muted{color:var(--secondary-text-color)}' +
       '.steps{display:grid;grid-template-columns:1fr 1fr;gap:16px}section{padding:20px;border:1px solid var(--divider-color,#ddd);border-radius:12px;background:var(--card-background-color,white);margin-bottom:20px}' +
       'button,.file-label{font:inherit;font-weight:600;border:1px solid var(--divider-color,#aaa);border-radius:8px;padding:10px 14px;cursor:pointer;background:var(--card-background-color,white);color:var(--primary-text-color)}' +
-      'button.primary{background:var(--primary-color,#03a9f4);color:var(--text-primary-color,white);border-color:transparent}button:disabled{opacity:.45;cursor:default}' +
+      'button.primary,nav button[aria-pressed=true]{background:var(--primary-color,#03a9f4);color:var(--text-primary-color,white);border-color:transparent}button:disabled{opacity:.45;cursor:default}' +
       'input[type=checkbox]{width:18px;height:18px;vertical-align:middle;accent-color:var(--primary-color)}input[type=search]{font:inherit;padding:10px;border:1px solid var(--divider-color,#aaa);border-radius:8px;width:100%;color:inherit;background:var(--card-background-color,white)}' +
       '.actions,.filters{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin:12px 0}.filters label{display:flex;gap:6px;align-items:center}' +
       '.scroll{overflow:auto;max-height:62vh}table{border-collapse:collapse;width:100%;font-size:14px}th,td{text-align:left;padding:12px 8px;border-bottom:1px solid var(--divider-color,#ddd);vertical-align:top}th{position:sticky;top:0;background:var(--card-background-color,white);z-index:1}' +
@@ -44,8 +45,10 @@ class LandscapeAssistPanel extends HTMLElement {
       '@media(max-width:700px){.steps{grid-template-columns:1fr}main{padding:16px 12px}section{padding:14px}td,th{padding:10px 6px}.actions button{flex:1}h1{font-size:20px}}' +
       '@media(max-width:700px){table,tbody{display:block;width:100%}thead{display:none}tr{display:grid;grid-template-columns:28px minmax(0,1fr);border:1px solid var(--divider-color,#ddd);border-radius:8px;padding:10px;margin:10px 0}td{display:block;grid-column:2;border:0;padding:5px 0;min-width:0;overflow-wrap:anywhere}td:first-child{grid-column:1;grid-row:1 / 7}td:nth-child(2){font-weight:600}td:nth-child(n+3)::before{content:attr(data-label);display:block;font-size:12px;color:var(--secondary-text-color);font-weight:600;margin-bottom:3px}td.reason{min-width:0;max-width:none}.scroll{max-height:70vh;overflow-y:auto;overflow-x:hidden}}' +
       '</style>' +
-      '<header><button id="menu" aria-label="Seitenmenü öffnen">☰</button><h1>Landscape Assist</h1></header>' +
-      '<main><p>Optimiere Namen, Aliase und Assist-Freigaben mit einer Datei aus ChatGPT. Du prüfst und wählst die Änderungen vor der Übernahme aus.</p>' +
+      '<header><button id="menu" aria-label="Seitenmenü öffnen">☰</button><h1>HA Landscape</h1></header>' +
+      '<nav class="actions" aria-label="Landscape-Bereiche" style="padding:0 20px"><button id="assist-tab" aria-pressed="true">Assist</button><button id="config-tab" aria-pressed="false">Configuration</button></nav>' +
+      '<landscape-configuration-panel id="configuration" hidden></landscape-configuration-panel>' +
+      '<main id="assist-main"><p>Optimiere Namen, Aliase und Assist-Freigaben mit einer Datei aus ChatGPT. Du prüfst und wählst die Änderungen vor der Übernahme aus.</p>' +
       '<div id="message" class="status" role="status" aria-live="polite" hidden></div>' +
       '<div class="steps"><section><h2>1. Bestand exportieren</h2><p>ZIP mit Entitäten, Gerätebeziehungen, Bereichen, Etagen und der Optimierungsanleitung herunterladen.</p>' +
       '<button id="export" class="primary">Assist-ZIP herunterladen</button><p id="export-info" class="muted"></p>' +
@@ -63,6 +66,8 @@ class LandscapeAssistPanel extends HTMLElement {
     this._el("menu").addEventListener("click", () => {
       this.dispatchEvent(new Event("hass-toggle-menu", { bubbles: true, composed: true }));
     });
+    this._el("assist-tab").onclick = () => this._switchMode(false);
+    this._el("config-tab").onclick = () => this._switchMode(true);
     this._el("export").addEventListener("click", () => this._run(async () => {
       const result = await this._call("export");
       const bytes = Uint8Array.from(atob(result.content), (char) => char.charCodeAt(0));
@@ -99,6 +104,22 @@ class LandscapeAssistPanel extends HTMLElement {
   }
 
   _el(id) { return this.shadowRoot.getElementById(id); }
+
+  async _switchMode(configuration) {
+    if (configuration && !customElements.get("landscape-configuration-panel")) {
+      try { await import("/landscape_static/configuration-panel.js?v=0.3.0"); }
+      catch (error) { this._show("Configuration konnte nicht geladen werden: " + error.message, true); return; }
+    }
+    this._el("assist-main").hidden = configuration;
+    this._el("configuration").hidden = !configuration;
+    this._el("assist-tab").setAttribute("aria-pressed", String(!configuration));
+    this._el("config-tab").setAttribute("aria-pressed", String(configuration));
+    if (configuration) {
+      this._configurationLoaded = true;
+      this._el("configuration").hass = this._hass;
+      this._el("configuration").panel = this._panel;
+    }
+  }
 
   _maybeLoad() {
     if (!this._built || !this._hass || !this._panel || this._loaded) return;

@@ -176,7 +176,7 @@ def role(keys: tuple[str, ...], tag: str) -> tuple[str, str | None]:
 
 
 def describe(files: dict[str, str]) -> dict[str, dict]:
-    """Resolve actual include contexts; unreferenced files remain explicitly inactive."""
+    """Resolve include contexts and identify inactive files."""
     details = {}
     edges = {}
     for path, text in files.items():
@@ -287,7 +287,8 @@ def describe(files: dict[str, str]) -> dict[str, dict]:
         info["merge_supported"] = info["type"] in {"automations", "scripts", "scenes"}
         if not info["active"]:
             info["warnings"].append(
-                "Keine Einbindung aus configuration.yaml erkannt; Import bindet die Datei nicht automatisch ein."
+                "Keine Einbindung aus configuration.yaml erkannt; "
+                "Import bindet die Datei nicht automatisch ein."
             )
     return details
 
@@ -325,7 +326,8 @@ def validate_context(path: str, text: str, info: dict) -> None:
         )
     ):
         raise ConfigurationError(
-            f"{path}: Eine einzelne Automation ist keine Konfiguration oder kein Package."
+            f"{path}: Eine einzelne Automation ist keine "
+            "Konfiguration oder kein Package."
         )
 
 
@@ -371,7 +373,8 @@ def merge_yaml(before: str, incoming: str, kind: str) -> str:
                     or not ids[0].value
                 ):
                     raise ConfigurationError(
-                        "Jeder Listeneintrag benötigt eine eindeutige id; Aliase reichen nicht aus."
+                        "Jeder Listeneintrag benötigt eine eindeutige id; "
+                        "Aliase reichen nicht aus."
                     )
                 values.append((ids[0].value, item, item))
         result, seen = [], set()
@@ -390,8 +393,9 @@ def merge_yaml(before: str, incoming: str, kind: str) -> str:
                 (item.end_mark.index for item in leaves),
                 default=end_node.end_mark.index,
             )
-            newline = text.find("\n", end)
-            end = len(text) if newline < 0 else newline + 1
+            if not end or text[end - 1] not in "\r\n":
+                newline = text.find("\n", end)
+                end = len(text) if newline < 0 else newline + 1
             result.append((identity, start, end, text[start:end]))
         return result
 

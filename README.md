@@ -10,6 +10,9 @@ anderem dazu, einem KI-Assistenten den vorhandenen Aufbau für die Erstellung
 passender Automatisierungen zu übergeben.
 Zusätzlich lassen sich Namen, Aliase und Assist-Freigaben über einen geprüften
 Dateiaustausch mit ChatGPT optimieren und gezielt übernehmen.
+Ab Version **0.3.0** verwaltet der Bereich **Configuration** außerdem einzelne
+YAML-Dateien, Dateiauswahlen und Configuration-Bundles mit Importvorschau,
+Home-Assistant-Prüfung und Backups.
 
 ## Funktionen
 
@@ -18,15 +21,106 @@ Dateiaustausch mit ChatGPT optimieren und gezielt übernehmen.
 - exportiert Zustand, Attribute, Geräte-, Bereichs-, Integrations- und
   Registry-Informationen
 - enthält technische IDs, Anzeigenamen und Labels
-- maskiert Tokens, Passwörter, API-Schlüssel und ähnliche Zugangsdaten
+- maskiert im CSV Tokens, Passwörter, API-Schlüssel und ähnliche Zugangsdaten
 - erzeugt Excel-taugliches UTF-8-CSV mit Semikolon als Trennzeichen
 - ersetzt bei jedem Export die vorherige Datei vollständig
 - bietet einen eigenen Löschknopf für die veröffentlichte Datei
 - lässt sich über die Oberfläche einrichten; kein YAML nötig
 
+## Configuration: YAML exportieren und importieren (ab 0.3.0)
+
+**HA Landscape → Configuration** öffnet den durchsuchbaren YAML-Dateibaum.
+Alle Dateiaktionen sind ausschließlich für angemeldete HA-Administratoren verfügbar.
+
+### Export
+
+- **Einzeldatei:** An einer Datei **Exportieren** anklicken. Ohne Kontext entsteht
+  direkt eine `.yaml`/`.yml`, standardmäßig mit unverändertem Dateinamen. Optional
+  wird das Datum ergänzt, beispielsweise `automations_2026-09-15.yaml`.
+- **Dateiauswahl:** Gewünschte Dateien anhaken und **Auswahl exportieren** wählen.
+  Mehrere Dateien werden als ZIP mit ihren relativen Pfaden heruntergeladen.
+- **Komplett-Bundle:** Alle zugänglichen YAML-Dateien des Configuration-Bereichs
+  exportieren, einschließlich noch nicht eingebundener eigener YAML-Dateien.
+- **Mit Kontext:** ZIP mit YAML und je einer `.landscape.json`. Die Begleitdatei
+  enthält Zielpfad, erkannte Rolle, Includes, übergeordnete Einbindung, textuell
+  gefundene Entitäts-/Aktionsreferenzen und die SHA-256-Prüfsumme des Originals.
+  Dynamisch erzeugte Referenzen in Templates können unvollständig sein.
+
+`!secret`, `!env_var`, Kommentare und vorhandene Zeilenenden bleiben beim Export
+erhalten. **YAML wird nicht automatisch geschwärzt:** Direkt eingetragene Passwörter
+bleiben enthalten. `secrets.yaml`/`secrets.yml`, versteckte Verzeichnisse, `.storage`,
+`www`, `custom_components`, `deps`, `esphome`, `blueprints`, `tts`, Backup- und
+Programmverzeichnisse werden nicht angeboten. Das Bundle ist ein YAML-Arbeitsstand,
+kein vollständiges Home-Assistant-Systembackup.
+
+### Import und Diff
+
+1. Bei einer vorhandenen Datei **Import / Diff** anklicken, oder unten eine oder
+   mehrere YAML-Dateien, passende Kontextdateien oder ein Configuration-ZIP wählen.
+2. Den relativen Zielpfad unter `/config` und die Importart prüfen. Kontext und
+   ZIP-Pfade helfen bei der Zuordnung. Bei mehrdeutigen Dateinamen bleibt das Ziel
+   leer; Landscape wählt keine gleichnamige Datei auf Verdacht aus.
+3. Dateien für den Import auswählen und **Prüfen und Diff anzeigen** anklicken.
+4. Vollständige Diffs, Zeilenzahlen und Dateikontext prüfen; erst danach
+   **Änderungen übernehmen** wählen. Eine Änderung der Auswahl oder Ziele macht
+   die Vorschau ungültig und erfordert eine neue Prüfung.
+
+| Importart | Verhalten |
+| --- | --- |
+| Datei ersetzen | Bestehende Datei vollständig durch den hochgeladenen Inhalt ersetzen. |
+| Als neue Datei importieren | Datei am gewählten relativen Pfad anlegen; vorhandene Dateien werden abgelehnt. |
+| Einträge zusammenführen | Automation-/Szenenlisten über eindeutige `id`, Skript-Zuordnungen über ihre Schlüssel zusammenführen. |
+
+Zusammenführen ersetzt passende **ganze Einträge**, ergänzt neue und erhält die
+übrigen Einträge. Es ist kein rekursiver Feld-Merge. Kommentare innerhalb ersetzter
+Einträge stammen aus dem Import. YAML-Anker, mehrdeutige IDs und ungeeignete
+Strukturen werden abgelehnt. Für Packages wird dieser Modus nicht angeboten.
+
+Neue Dateien werden nicht automatisch in `configuration.yaml` eingetragen.
+Eine neue `.yaml` in einem bereits per `!include_dir_named` eingebundenen
+Package-Verzeichnis gehört dagegen durch diese bestehende Einbindung dazu.
+Die Rolle wird aus dem Include-Kontext ermittelt, nicht aus dem Dateinamen.
+Verschachtelte Includes, Packages und die vier `!include_dir_*`-Varianten werden
+berücksichtigt. Wie in HA gelten Verzeichnis-Includes nur für `.yaml`; `.yml`
+kann direkt per `!include` eingebunden werden.
+
+### Prüfung, Backups und Rücksetzung
+
+- Die Vorschau prüft YAML-Syntax, doppelte Schlüssel, zulässige Tags/Pfade,
+  Include-Ziele und erwartete Containerformen. `automations.yaml` als einzelnes
+  Objekt wird bei einer Listeneinbindung bereits hier abgelehnt.
+- Beim Übernehmen prüft Landscape den unveränderten Ausgangsstand erneut, sichert
+  die betroffenen Originaldateien und ersetzt sie einzeln atomar. Anschließend
+  läuft die native HA-Konfigurationsprüfung. Automationen und Skripte werden
+  zusätzlich mit den Validatoren geprüft, die HA für das Bearbeiten verwendet;
+  als deaktiviert zurückgegebene ungültige Einträge werden so nicht übersehen.
+- Fehler und neue Prüfwarnungen führen zur Rücksetzung des gesamten Imports.
+  Bereits vorhandene, unveränderte Warnungen erscheinen im Protokoll. Ein Import
+  darf bestehende Fehler beheben, muss die anschließende Prüfung aber bestehen.
+- Während der Prüfung wird HA nicht automatisch neu geladen. Erst nach einem
+  erfolgreichen Ergebnis die passenden YAML-Bereiche neu laden oder HA neu starten.
+  Eine Konfigurationsprüfung garantiert nicht das Verhalten realer Geräte.
+- Bei Änderungen seit der Vorschau wird die Übernahme abgelehnt. Mit Kontextdatei
+  erkennt Landscape zusätzlich Änderungen seit dem Export; einer nackten YAML
+  fehlt diese Exportbasis. Beim Rücksetzen werden externe Änderungen nie blind
+  überschrieben, sondern mit betroffenem Pfad als Konflikt gemeldet.
+- Originaldateien und Journal liegen privat in
+  `/config/.storage/landscape_configuration/<Backup-ID>/`. Die `.bin`-Dateien
+  enthalten die unveränderten Originalbytes; `manifest.json` ordnet die Pfade zu.
+  Im Abschnitt **Backups** lässt sich eine Rücksetzung zuerst prüfen und danach
+  übernehmen. Dabei werden auch neu angelegte Dateien wieder entfernt.
+- Unterbrochene Importe werden beim nächsten Laden von Landscape anhand des
+  Journals zurückgesetzt. Browserabbrüche beenden eine laufende Transaktion nicht.
+  Backups bleiben auch nach dem Entfernen der Integration erhalten.
+
+Grenzen: 1 MB je YAML-Datei, 2 MB je Import/Export einschließlich Kontext und
+entpacktem ZIP, bis zu 250 YAML-Dateien und 40 MB im Inventar. Größere Dateimengen
+in kleineren Auswahlen bearbeiten. Die Oberfläche zeigt die letzten 20 Backups;
+ältere Backups werden nicht automatisch gelöscht. Symlinks werden nicht verfolgt.
+
 ## Assist mit ChatGPT optimieren (ab 0.2.0)
 
-In der Seitenleiste steht Administratoren **Landscape Assist** zur Verfügung.
+In der Seitenleiste steht Administratoren **HA Landscape → Assist** zur Verfügung.
 
 1. **Assist-ZIP herunterladen** anklicken.
 2. ZIP in ChatGPT hochladen und **„Landscape Assist optimieren.“** schreiben.
