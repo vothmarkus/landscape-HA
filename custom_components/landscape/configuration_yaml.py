@@ -13,13 +13,25 @@ MAX_FILE_BYTES = 1_000_000
 MAX_TOTAL_BYTES = 2_000_000
 MAX_FILES = 250
 INCLUDE_TAGS = {
-    "!include", "!include_dir_list", "!include_dir_named",
-    "!include_dir_merge_list", "!include_dir_merge_named",
+    "!include",
+    "!include_dir_list",
+    "!include_dir_named",
+    "!include_dir_merge_list",
+    "!include_dir_merge_named",
 }
 HA_TAGS = INCLUDE_TAGS | {"!secret", "!env_var", "!input"}
 EXCLUDED_DIRS = {
-    "custom_components", "deps", "www", "tts", "backups", "backup",
-    "esphome", "blueprints", "node_modules", "venv", "__pycache__",
+    "custom_components",
+    "deps",
+    "www",
+    "tts",
+    "backups",
+    "backup",
+    "esphome",
+    "blueprints",
+    "node_modules",
+    "venv",
+    "__pycache__",
 }
 ENTITY_RE = re.compile(r"\b[a-z][a-z0-9_]*\.[a-z0-9_]+\b")
 
@@ -91,10 +103,14 @@ def _validate_node(node: Node | None, parents: set[int], count: list[int]) -> No
         return
     count[0] += 1
     if id(node) in parents or count[0] > 50000:
-        raise ConfigurationError("Rekursive oder zu viele YAML-Aliase sind nicht erlaubt.")
+        raise ConfigurationError(
+            "Rekursive oder zu viele YAML-Aliase sind nicht erlaubt."
+        )
     if node.tag.startswith("!") and node.tag not in HA_TAGS:
         raise ConfigurationError(f"Nicht unterstütztes YAML-Tag: {node.tag}")
-    if (node.tag.startswith("tag:") and not node.tag.startswith("tag:yaml.org,2002:")) or node.tag.startswith("tag:yaml.org,2002:python"):
+    if (
+        node.tag.startswith("tag:") and not node.tag.startswith("tag:yaml.org,2002:")
+    ) or node.tag.startswith("tag:yaml.org,2002:python"):
         raise ConfigurationError("Nicht unterstütztes YAML-Tag.")
     if node.tag in HA_TAGS and not isinstance(node, ScalarNode):
         raise ConfigurationError(f"{node.tag} benötigt einen einzelnen Wert.")
@@ -133,7 +149,11 @@ def role(keys: tuple[str, ...], tag: str) -> tuple[str, str | None]:
     if not keys:
         return "configuration", "mapping"
     if keys == ("homeassistant", "packages"):
-        return ("package", "mapping") if tag == "!include_dir_named" else ("packages", "mapping")
+        return (
+            ("package", "mapping")
+            if tag == "!include_dir_named"
+            else ("packages", "mapping")
+        )
     if len(keys) == 3 and keys[:2] == ("homeassistant", "packages"):
         return "package", "mapping"
     if len(keys) == 2 and keys[0] in {"automation", "scene", "template", "script"}:
@@ -141,7 +161,12 @@ def role(keys: tuple[str, ...], tag: str) -> tuple[str, str | None]:
     if len(keys) != 1:
         return "fragment", None
     domain = keys[0]
-    kind = {"automation": "automations", "scene": "scenes", "script": "scripts", "template": "templates"}.get(domain, domain)
+    kind = {
+        "automation": "automations",
+        "scene": "scenes",
+        "script": "scripts",
+        "template": "templates",
+    }.get(domain, domain)
     shape = "mapping" if domain in {"script", "mqtt", "homeassistant"} else None
     if domain in {"automation", "scene", "template", "sensor", "binary_sensor"}:
         shape = "list"
@@ -156,10 +181,17 @@ def describe(files: dict[str, str]) -> dict[str, dict]:
     edges = {}
     for path, text in files.items():
         info = details[path] = {
-            "path": path, "type": "yaml", "included_by": [], "includes": [],
-            "active": path == "configuration.yaml", "expected_shapes": [],
-            "syntax_error": None, "warnings": [], "context_errors": [],
-            "referenced_entities": [], "referenced_services": [],
+            "path": path,
+            "type": "yaml",
+            "included_by": [],
+            "includes": [],
+            "active": path == "configuration.yaml",
+            "expected_shapes": [],
+            "syntax_error": None,
+            "warnings": [],
+            "context_errors": [],
+            "referenced_entities": [],
+            "referenced_services": [],
             "merge_supported": False,
         }
         edges[path] = []
@@ -172,24 +204,40 @@ def describe(files: dict[str, str]) -> dict[str, dict]:
         for keys, item in walk(node):
             if isinstance(item, ScalarNode) and item.tag not in HA_TAGS:
                 refs = set(ENTITY_RE.findall(item.value))
-                (services if keys and keys[-1] in {"action", "service"} else entities).update(refs)
+                (
+                    services if keys and keys[-1] in {"action", "service"} else entities
+                ).update(refs)
             if item.tag not in INCLUDE_TAGS:
                 continue
             try:
-                target = include_path(path, item.value, directory=item.tag != "!include")
+                target = include_path(
+                    path, item.value, directory=item.tag != "!include"
+                )
             except ConfigurationError as err:
                 info["context_errors"].append(str(err))
                 continue
             record = {"tag": item.tag, "target": target, "key": ".".join(keys)}
             info["includes"].append(record)
-            children = [target] if item.tag == "!include" else sorted(name for name in files if name.startswith(target + "/") and name.endswith(".yaml"))
+            children = (
+                [target]
+                if item.tag == "!include"
+                else sorted(
+                    name
+                    for name in files
+                    if name.startswith(target + "/") and name.endswith(".yaml")
+                )
+            )
             if item.tag == "!include_dir_named":
                 names = [PurePosixPath(name).stem for name in children]
                 if len(names) != len(set(names)):
-                    info["context_errors"].append(f"{target}: Gleiche Dateinamen in !include_dir_named.")
+                    info["context_errors"].append(
+                        f"{target}: Gleiche Dateinamen in !include_dir_named."
+                    )
             for child in children:
                 if child not in files:
-                    info["context_errors"].append(f"Include fehlt oder ist nicht freigegeben: {child}")
+                    info["context_errors"].append(
+                        f"Include fehlt oder ist nicht freigegeben: {child}"
+                    )
                 else:
                     edges[path].append((child, keys, item.tag))
         info["referenced_entities"] = sorted(entities - services)
@@ -232,11 +280,15 @@ def describe(files: dict[str, str]) -> dict[str, dict]:
                 child_context = ("homeassistant", "packages")
             elif tag in {"!include_dir_list", "!include_dir_named"}:
                 child_context = (*child_context, "[]")
-            queue.append((child, child_context, child_kind, child_shape, (*parents, path)))
+            queue.append(
+                (child, child_context, child_kind, child_shape, (*parents, path))
+            )
     for info in details.values():
         info["merge_supported"] = info["type"] in {"automations", "scripts", "scenes"}
         if not info["active"]:
-            info["warnings"].append("Keine Einbindung aus configuration.yaml erkannt; Import bindet die Datei nicht automatisch ein.")
+            info["warnings"].append(
+                "Keine Einbindung aus configuration.yaml erkannt; Import bindet die Datei nicht automatisch ein."
+            )
     return details
 
 
@@ -247,24 +299,59 @@ def validate_context(path: str, text: str, info: dict) -> None:
     expected = info["expected_shapes"]
     if len(expected) > 1:
         raise ConfigurationError(f"{path}: Widersprüchliche Include-Kontexte.")
-    shape = "mapping" if isinstance(node, MappingNode) else "list" if isinstance(node, SequenceNode) else "scalar"
-    if node is not None and expected and shape not in expected and not (isinstance(node, ScalarNode) and node.tag in INCLUDE_TAGS):
-        label = "Liste mit '-'-Einträgen" if expected == ["list"] else "Zuordnung (Mapping)"
+    shape = (
+        "mapping"
+        if isinstance(node, MappingNode)
+        else "list"
+        if isinstance(node, SequenceNode)
+        else "scalar"
+    )
+    if (
+        node is not None
+        and expected
+        and shape not in expected
+        and not (isinstance(node, ScalarNode) and node.tag in INCLUDE_TAGS)
+    ):
+        label = (
+            "Liste mit '-'-Einträgen" if expected == ["list"] else "Zuordnung (Mapping)"
+        )
         raise ConfigurationError(f"{path}: Hier wird eine {label} erwartet.")
-    if info["type"] in {"configuration", "package", "packages"} and isinstance(node, MappingNode) and any(key.value in {"alias", "trigger", "triggers", "actions", "action"} for key, _ in node.value):
-        raise ConfigurationError(f"{path}: Eine einzelne Automation ist keine Konfiguration oder kein Package.")
+    if (
+        info["type"] in {"configuration", "package", "packages"}
+        and isinstance(node, MappingNode)
+        and any(
+            key.value in {"alias", "trigger", "triggers", "actions", "action"}
+            for key, _ in node.value
+        )
+    ):
+        raise ConfigurationError(
+            f"{path}: Eine einzelne Automation ist keine Konfiguration oder kein Package."
+        )
 
 
 def merge_yaml(before: str, incoming: str, kind: str) -> str:
     """Replace complete entries by stable IDs/keys; retain unrelated source bytes."""
     if kind not in {"automations", "scripts", "scenes"}:
-        raise ConfigurationError("Zusammenführen ist nur für Automationen, Szenen und Skripte verfügbar.")
+        raise ConfigurationError(
+            "Zusammenführen ist nur für Automationen, Szenen und Skripte verfügbar."
+        )
     old, new = parse_yaml(before), parse_yaml(incoming)
-    if any(isinstance(event, yaml.AliasEvent) or getattr(event, "anchor", None) for source in (before, incoming) for event in yaml.parse(source)):
+    if any(
+        isinstance(event, yaml.AliasEvent) or getattr(event, "anchor", None)
+        for source in (before, incoming)
+        for event in yaml.parse(source)
+    ):
         raise ConfigurationError("Dateien mit YAML-Ankern bitte vollständig ersetzen.")
     expected = MappingNode if kind == "scripts" else SequenceNode
-    if not isinstance(old, expected) or not isinstance(new, expected) or old.flow_style or new.flow_style:
-        raise ConfigurationError("Zusammenführen benötigt gleichartige Container in Blockschreibweise.")
+    if (
+        not isinstance(old, expected)
+        or not isinstance(new, expected)
+        or old.flow_style
+        or new.flow_style
+    ):
+        raise ConfigurationError(
+            "Zusammenführen benötigt gleichartige Container in Blockschreibweise."
+        )
 
     def blocks(node: Node, text: str):
         if isinstance(node, MappingNode):
@@ -273,10 +360,19 @@ def merge_yaml(before: str, incoming: str, kind: str) -> str:
             values = []
             for item in node.value:
                 if not isinstance(item, MappingNode):
-                    raise ConfigurationError("Jeder Listeneintrag benötigt eine Zuordnung mit id.")
+                    raise ConfigurationError(
+                        "Jeder Listeneintrag benötigt eine Zuordnung mit id."
+                    )
                 ids = [value for key, value in item.value if key.value == "id"]
-                if len(ids) != 1 or not isinstance(ids[0], ScalarNode) or ids[0].tag.startswith("!") or not ids[0].value:
-                    raise ConfigurationError("Jeder Listeneintrag benötigt eine eindeutige id; Aliase reichen nicht aus.")
+                if (
+                    len(ids) != 1
+                    or not isinstance(ids[0], ScalarNode)
+                    or ids[0].tag.startswith("!")
+                    or not ids[0].value
+                ):
+                    raise ConfigurationError(
+                        "Jeder Listeneintrag benötigt eine eindeutige id; Aliase reichen nicht aus."
+                    )
                 values.append((ids[0].value, item, item))
         result, seen = [], set()
         for identity, start_node, end_node in values:
@@ -285,8 +381,15 @@ def merge_yaml(before: str, incoming: str, kind: str) -> str:
             seen.add(identity)
             start = text.rfind("\n", 0, start_node.start_mark.index) + 1
             # Container end marks may include the next entry's leading comments.
-            leaves = [item for _, item in walk(end_node) if isinstance(item, ScalarNode) or not item.value]
-            end = max((item.end_mark.index for item in leaves), default=end_node.end_mark.index)
+            leaves = [
+                item
+                for _, item in walk(end_node)
+                if isinstance(item, ScalarNode) or not item.value
+            ]
+            end = max(
+                (item.end_mark.index for item in leaves),
+                default=end_node.end_mark.index,
+            )
             newline = text.find("\n", end)
             end = len(text) if newline < 0 else newline + 1
             result.append((identity, start, end, text[start:end]))
@@ -298,7 +401,12 @@ def merge_yaml(before: str, incoming: str, kind: str) -> str:
     for identity, start, end, _ in reversed(old_blocks):
         old_ids.add(identity)
         if identity in replacements:
-            result = result[:start] + replacements[identity].rstrip("\n") + "\n" + result[end:]
+            result = (
+                result[:start]
+                + replacements[identity].rstrip("\n")
+                + "\n"
+                + result[end:]
+            )
     for identity, _, _, text in new_blocks:
         if identity not in old_ids:
             result = result.rstrip("\n") + "\n" + text.rstrip("\n") + "\n"
