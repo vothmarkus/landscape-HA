@@ -57,13 +57,26 @@ kein vollständiges Home-Assistant-Systembackup.
 
 1. Bei einer vorhandenen Datei **Import / Diff** anklicken, oder unten eine oder
    mehrere YAML-Dateien, passende Kontextdateien oder ein Configuration-ZIP wählen.
-2. Den relativen Zielpfad unter `/config` und die Importart prüfen. Kontext und
-   ZIP-Pfade helfen bei der Zuordnung. Bei mehrdeutigen Dateinamen bleibt das Ziel
-   leer; Landscape wählt keine gleichnamige Datei auf Verdacht aus.
+2. Im Dropdown **Vorhandene Zieldatei** das Ziel und darunter die Importart prüfen.
+   Ab **0.3.1** wählt Landscape anhand des passendsten Dateinamens vor: etwa
+   `configuration_blitzer_korrigiert.yaml` → `configuration.yaml` oder
+   `gasmeter_neu.yaml` → `packages/gasmeter.yaml`. Ein Umbenennen vor dem Upload
+   ist nicht erforderlich. Alle vorhandenen YAML-Zielpfade bleiben auswählbar;
+   passende Namen stehen oben. Für neue Dateien den relativen Pfad unter `/config`
+   eingeben und **Als neue Datei importieren** wählen.
 3. Dateien für den Import auswählen und **Prüfen und Diff anzeigen** anklicken.
 4. Vollständige Diffs, Zeilenzahlen und Dateikontext prüfen; erst danach
    **Änderungen übernehmen** wählen. Eine Änderung der Auswahl oder Ziele macht
    die Vorschau ungültig und erfordert eine neue Prüfung.
+
+Die Vorauswahl bevorzugt identische Dateinamen, anschließend den längsten
+passenden Namen aus vollständigen Namensbestandteilen. Groß-/Kleinschreibung,
+Unterstriche, Bindestriche, Leerzeichen und Zusätze wie Datum oder „korrigiert“
+stehen der Erkennung nicht im Weg. `gas` allein passt dabei nicht auf `gasmeter`.
+Bei gleich guten Treffern, beispielsweise gleichnamigen Dateien in zwei Ordnern,
+bleibt das Ziel leer und muss im Dropdown gewählt werden. Ein explizit über
+**Import / Diff** gewähltes Ziel, passende Kontextdateien und ZIP-Pfade haben
+Vorrang vor der Namensvermutung. Die Vorauswahl ändert noch keine Datei.
 
 | Importart | Verhalten |
 | --- | --- |

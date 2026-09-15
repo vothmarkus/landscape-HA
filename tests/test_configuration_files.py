@@ -215,6 +215,95 @@ def test_ambiguous_basename_even_with_root_file(workspace):
     assert item["path"] == "automations.yaml"
 
 
+@pytest.mark.parametrize(
+    "filename,target",
+    [
+        ("configuration_blitzer_korrigiert.yaml", "configuration.yaml"),
+        ("meine-CONFIGURATION (9).yml", "configuration.yaml"),
+        ("automations_ueberarbeitet_2026-09-15.yaml", "automations.yaml"),
+        ("korrigiert_gas (2).yaml", "packages/gas.yaml"),
+        ("templates.final.yaml", "templates.yaml"),
+    ],
+)
+def test_renamed_upload_selects_existing_file_without_writing(
+    workspace, filename, target
+):
+    before = workspace.snapshot()
+    item = workspace.inspect([{"filename": filename, "content": "{}\n"}])["files"][0]
+    assert item["path"] == item["suggested_path"] == target
+    assert item["mode"] == "replace"
+    assert item["candidates"][0] == target
+    assert workspace.snapshot() == before
+    assert not (workspace.root / ".storage").exists()
+
+
+def test_more_specific_filename_wins_and_exact_names_take_precedence(workspace):
+    for path in [
+        "packages/sauna.yaml",
+        "packages/sauna_manager.yaml",
+        "automations_2026-09-15.yaml",
+    ]:
+        (workspace.root / path).write_text("{}\n")
+    item = workspace.inspect(
+        [{"filename": "sauna-manager_korrigiert.yaml", "content": "{}\n"}]
+    )["files"][0]
+    assert item["path"] == "packages/sauna_manager.yaml"
+    assert item["candidates"] == ["packages/sauna_manager.yaml", "packages/sauna.yaml"]
+    item = workspace.inspect(
+        [{"filename": "automations_2026-09-15.yaml", "content": "[]\n"}]
+    )["files"][0]
+    assert item["path"] == "automations_2026-09-15.yaml"
+
+
+@pytest.mark.parametrize("other", ["gas.yaml", "abc.yaml"])
+def test_equally_good_terms_do_not_guess_a_target(workspace, other):
+    (workspace.root / other).write_text("{}\n")
+    item = workspace.inspect(
+        [{"filename": "gas_abc_korrigiert.yaml", "content": "{}\n"}]
+    )["files"][0]
+    assert item["path"] == item["suggested_path"] == ""
+    assert item["mode"] == "replace"
+    assert set(item["candidates"]) == {other, "packages/gas.yaml"}
+
+
+@pytest.mark.parametrize("name", ["gasmeter_neu.yaml", "shellscripts.yaml"])
+def test_partial_words_do_not_replace_unrelated_files(workspace, name):
+    item = workspace.inspect([{"filename": name, "content": "{}\n"}])["files"][0]
+    assert item["path"] == name
+    assert item["mode"] == "create"
+    assert item["candidates"] == []
+
+
+def test_explicit_and_zip_paths_override_filename_suggestions(workspace):
+    item = workspace.inspect(
+        [{"filename": "new/configuration_fixed.yaml", "content": "{}\n"}]
+    )["files"][0]
+    assert item["path"] == "new/configuration_fixed.yaml"
+    buffer = io.BytesIO()
+    with zipfile.ZipFile(buffer, "w") as archive:
+        archive.writestr("configuration_fixed.yaml", "{}\n")
+    item = workspace.inspect([], base64.b64encode(buffer.getvalue()).decode())["files"][
+        0
+    ]
+    assert item["path"] == "configuration_fixed.yaml"
+    assert item["mode"] == "create"
+
+
+def test_context_still_protects_renamed_upload_with_duplicate_basenames(workspace):
+    bundle = workspace.export(["packages/gas.yaml"], True, False)
+    entries = unpack_archive(bundle["content"])
+    for entry in entries:
+        if entry["filename"] == "packages/gas.yaml":
+            entry["filename"] = "gas_korrigiert.yaml"
+    (workspace.root / "gas.yaml").write_text("{}\n")
+    item = workspace.inspect(entries)["files"][0]
+    assert item["path"] == item["source_path"] == "packages/gas.yaml"
+    assert item["source_matches"]
+    (workspace.root / "packages/gas.yaml").write_text("{}\n")
+    with pytest.raises(ConfigurationError, match="Seit dem Export"):
+        workspace.prepare([item])
+
+
 def test_stale_context_is_rejected(workspace):
     bundle = workspace.export(["automations.yaml"], True, False)
     imports = workspace.inspect([], bundle["content"])["files"]
