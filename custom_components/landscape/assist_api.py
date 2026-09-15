@@ -13,6 +13,7 @@ from homeassistant.core import HomeAssistant
 
 from .assist import AssistOptimizer
 from .assist_schema import PatchError
+from .configuration_api import websocket_configuration
 from .const import DOMAIN, VERSION
 
 _LOGGER = logging.getLogger(__name__)
@@ -30,17 +31,23 @@ async def async_setup_panel(hass: HomeAssistant, entry_id: str) -> None:
                     STATIC_URL,
                     str(Path(__file__).parent / "frontend" / "assist-panel.js"),
                     False,
-                )
+                ),
+                StaticPathConfig(
+                    "/landscape_static/configuration-panel.js",
+                    str(Path(__file__).parent / "frontend" / "configuration-panel.js"),
+                    False,
+                ),
             ]
         )
         websocket_api.async_register_command(hass, websocket_assist)
+        websocket_api.async_register_command(hass, websocket_configuration)
         hass.data[DATA_REGISTERED] = True
     await panel_custom.async_register_panel(
         hass,
         frontend_url_path=PANEL_PATH,
         webcomponent_name="landscape-assist-panel",
-        sidebar_title="Landscape Assist",
-        sidebar_icon="mdi:account-voice",
+        sidebar_title="HA Landscape",
+        sidebar_icon="mdi:file-tree",
         module_url=f"{STATIC_URL}?v={VERSION}",
         config={"entry_id": entry_id},
         require_admin=True,

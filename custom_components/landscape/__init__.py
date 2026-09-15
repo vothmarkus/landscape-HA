@@ -10,6 +10,7 @@ from homeassistant.helpers.service import async_register_admin_service
 
 from .assist import AssistOptimizer
 from .assist_api import async_setup_panel, async_unload_panel
+from .configuration import ConfigurationWorkspace
 from .const import (
     CSV_FILENAME,
     DOMAIN,
@@ -27,6 +28,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     await exporter.async_initialize()
     exporter.assist = AssistOptimizer(hass, entry.entry_id)
     await exporter.assist.async_initialize()
+    exporter.configuration = ConfigurationWorkspace(hass)
+    await exporter.configuration.async_initialize()
 
     hass.data.setdefault(DOMAIN, {})[entry.entry_id] = exporter
     await async_setup_panel(hass, entry.entry_id)
@@ -55,6 +58,9 @@ async def async_remove_entry(hass: HomeAssistant, _entry: ConfigEntry) -> None:
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Unload a HA Landscape config entry."""
+    exporter = hass.data.get(DOMAIN, {}).get(entry.entry_id)
+    if workspace := getattr(exporter, "configuration", None):
+        await workspace.async_wait()
     if not await hass.config_entries.async_unload_platforms(entry, PLATFORMS):
         return False
 
