@@ -10,10 +10,10 @@ const path = require('node:path');
   const server = http.createServer((request, response) => {
     const pathname = new URL(request.url, 'http://localhost').pathname;
     if (pathname === '/') {
-      response.setHeader('Content-Type', 'text/html');
+      response.setHeader('Content-Type', 'text/html; charset=utf-8');
       response.end('<html lang="de"><style>body{margin:0;--primary-color:#007c91;--primary-background-color:#f4f6f8;--card-background-color:white;--primary-text-color:#172c38;--secondary-text-color:#54656e;--divider-color:#dce3e7}</style><body><script src="/landscape_static/assist-panel.js"></script></body></html>');
     } else if (['/landscape_static/assist-panel.js', '/landscape_static/configuration-panel.js'].includes(pathname)) {
-      response.setHeader('Content-Type', 'text/javascript');
+      response.setHeader('Content-Type', 'text/javascript; charset=utf-8');
       response.end(fs.readFileSync(path.join(frontend, path.basename(pathname))));
     } else { response.statusCode = 404; response.end(); }
   });

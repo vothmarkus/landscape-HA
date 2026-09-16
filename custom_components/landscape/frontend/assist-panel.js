@@ -48,16 +48,16 @@ class LandscapeAssistPanel extends HTMLElement {
       '<header><button id="menu" aria-label="Seitenmenü öffnen">☰</button><h1>HA Landscape</h1></header>' +
       '<nav class="actions" aria-label="Landscape-Bereiche" style="padding:0 20px"><button id="assist-tab" aria-pressed="true">Assist</button><button id="config-tab" aria-pressed="false">Configuration</button></nav>' +
       '<landscape-configuration-panel id="configuration" hidden></landscape-configuration-panel>' +
-      '<main id="assist-main"><p>Optimiere Namen, Aliase und Assist-Freigaben mit einer Datei aus ChatGPT. Du prüfst und wählst die Änderungen vor der Übernahme aus.</p>' +
+      '<main id="assist-main"><p>Assist-Daten exportieren, im KI-Chat optimieren lassen und die Vorschläge wieder importieren. So verbesserst du Namen, Aliase, Freigaben und räumliche Zuordnungen. Du prüfst und wählst die Änderungen vor der Übernahme aus.</p>' +
       '<div id="message" class="status" role="status" aria-live="polite" hidden></div>' +
-      '<div class="steps"><section><h2>1. Bestand exportieren</h2><p>ZIP mit Entitäten, Gerätebeziehungen, Bereichen, Etagen und der Optimierungsanleitung herunterladen.</p>' +
+      '<div class="steps"><section><h2>1. Assist-Daten exportieren</h2><p>ZIP mit Entitäten, Gerätebeziehungen, Bereichen, Etagen und der Optimierungsanleitung herunterladen.</p>' +
       '<button id="export" class="primary">Assist-ZIP herunterladen</button><p id="export-info" class="muted"></p>' +
       '<p class="muted">Das ZIP enthält Geräte- und Raumnamen. Prüfe den Inhalt vor der Weitergabe.</p></section>' +
-      '<section><h2>2. In ChatGPT optimieren</h2><p>ZIP hier in ChatGPT hochladen und schreiben: <strong>„Landscape Assist optimieren.“</strong></p>' +
-      '<p>Die zurückgegebene <strong>assist_optimized.json</strong> hier auswählen. Dafür sind kein API-Schlüssel und keine lokale KI nötig.</p>' +
+      '<section><h2>2. Ergebnis importieren</h2><p>Das ZIP in einem KI-Chat wie ChatGPT hochladen und schreiben: <strong>„Landscape Assist optimieren. Beachte die Anleitung und das Schema im ZIP.“</strong></p>' +
+      '<p>Die zurückgegebene <strong>assist_optimized.json</strong> hier importieren. Landscape benötigt dafür keine LLM-API-Anbindung und kein lokales Modell.</p>' +
       '<input id="file" type="file" accept=".json,application/json" aria-label="Optimierte JSON-Datei auswählen">' +
       '<div class="actions"><button id="recheck" hidden>Datei erneut prüfen</button></div></section></div>' +
-      '<section id="preview" hidden><h2>3. Vorschläge prüfen</h2><p id="summary"></p><p class="muted">Entity-IDs bleiben unverändert. Etagenänderungen betreffen einen ganzen Bereich und sind zunächst abgewählt.</p>' +
+      '<section id="preview" hidden><h2>3. Prüfen und übernehmen</h2><p id="summary"></p><p class="muted">Entity-IDs bleiben unverändert. Etagenänderungen betreffen einen ganzen Bereich und sind zunächst abgewählt.</p>' +
       '<div id="filters" class="filters"></div><input id="search" type="search" placeholder="Entität, Bereich oder Vorschlag suchen" aria-label="Vorschläge durchsuchen">' +
       '<p id="selection" class="muted"></p><div class="scroll"><table><thead><tr><th>Auswahl</th><th>Entität / Bereich</th><th>Änderung</th><th>Aktuell</th><th>Vorschlag</th><th>Begründung / Status</th></tr></thead><tbody id="rows"></tbody></table></div>' +
       '<div class="actions"><button id="apply" class="primary">Ausgewählte übernehmen</button><button id="apply-all">Alle übernehmen</button><button id="discard">Verwerfen</button></div></section>' +
@@ -72,7 +72,7 @@ class LandscapeAssistPanel extends HTMLElement {
       const result = await this._call("export");
       const bytes = Uint8Array.from(atob(result.content), (char) => char.charCodeAt(0));
       this._download(result.filename, bytes, "application/zip");
-      this._show(result.entity_count + " Entitäten exportiert. ZIP in ChatGPT hochladen.");
+      this._show(result.entity_count + " Entitäten exportiert. ZIP in einem KI-Chat wie ChatGPT hochladen.");
       this._el("export-info").textContent = "Export-ID: " + result.source_id;
     }));
     this._el("file").addEventListener("change", (event) => this._run(async () => {
@@ -107,7 +107,7 @@ class LandscapeAssistPanel extends HTMLElement {
 
   async _switchMode(configuration) {
     if (configuration && !customElements.get("landscape-configuration-panel")) {
-      try { await import("/landscape_static/configuration-panel.js?v=0.3.1"); }
+      try { await import("/landscape_static/configuration-panel.js?v=0.3.2"); }
       catch (error) { this._show("Configuration konnte nicht geladen werden: " + error.message, true); return; }
     }
     this._el("assist-main").hidden = configuration;
