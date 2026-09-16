@@ -33,7 +33,7 @@ class LandscapeConfigurationPanel extends HTMLElement {
         @media(max-width:700px){main{padding:16px 12px}section{padding:14px}.file{flex-wrap:wrap}.file .actions{width:100%;margin-left:28px}.actions button{flex:1}.folder{padding-left:10px}pre{max-width:100%}}
       </style>
       <main>
-        <p>YAML exportieren, im KI-Chat überarbeiten lassen und mit Diff-Prüfung wieder importieren. Du überträgst die Dateien und bestätigst die Änderungen; Landscape benötigt dafür keine LLM-API-Anbindung.</p>
+        <p>YAML-Dateien exportieren, in einem KI-Chat überarbeiten lassen und anschließend in Landscape importieren. Vor der Übernahme prüfst du Ziel und Diff.</p>
         <div id="message" class="status" role="status" aria-live="polite" hidden></div>
         <section>
           <h2>YAML exportieren</h2>
@@ -47,8 +47,8 @@ class LandscapeConfigurationPanel extends HTMLElement {
         </section>
         <section id="viewer" hidden><h2 id="view-title"></h2><p id="view-info" class="muted"></p><pre id="view-content"></pre><button id="close-view">Schließen</button></section>
         <section>
-          <h2>YAML importieren und prüfen</h2>
-          <p>Überarbeitete oder neue YAML-Dateien aus dem KI-Chat oder ein Configuration-ZIP auswählen. Unveränderte .landscape.json-Begleitdateien kannst du mit hochladen. Anschließend Ziel, Importart und Diff prüfen.</p>
+          <h2>YAML importieren</h2>
+          <p>Überarbeitete oder neue YAML-Dateien vom KI-Chat herunterladen und in Landscape auswählen, einzeln oder als ZIP. Unveränderte .landscape.json-Begleitdateien kannst du mit importieren. Anschließend Ziel, Importart und Diff prüfen.</p>
           <input id="upload" type="file" multiple accept=".yaml,.yml,.json,.zip" aria-label="Konfigurationsdateien importieren">
           <p id="target-hint" class="muted"></p><div id="imports"></div>
           <button id="preview-button" class="primary" hidden>Prüfen und Diff anzeigen</button>

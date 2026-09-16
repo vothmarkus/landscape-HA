@@ -46,15 +46,15 @@ class LandscapeAssistPanel extends HTMLElement {
       '@media(max-width:700px){table,tbody{display:block;width:100%}thead{display:none}tr{display:grid;grid-template-columns:28px minmax(0,1fr);border:1px solid var(--divider-color,#ddd);border-radius:8px;padding:10px;margin:10px 0}td{display:block;grid-column:2;border:0;padding:5px 0;min-width:0;overflow-wrap:anywhere}td:first-child{grid-column:1;grid-row:1 / 7}td:nth-child(2){font-weight:600}td:nth-child(n+3)::before{content:attr(data-label);display:block;font-size:12px;color:var(--secondary-text-color);font-weight:600;margin-bottom:3px}td.reason{min-width:0;max-width:none}.scroll{max-height:70vh;overflow-y:auto;overflow-x:hidden}}' +
       '</style>' +
       '<header><button id="menu" aria-label="Seitenmenü öffnen">☰</button><h1>HA Landscape</h1></header>' +
-      '<nav class="actions" aria-label="Landscape-Bereiche" style="padding:0 20px"><button id="assist-tab" aria-pressed="true">Assist</button><button id="config-tab" aria-pressed="false">Configuration</button></nav>' +
+      '<nav class="actions" aria-label="Landscape-Bereiche" style="padding:0 20px"><button id="assist-tab" aria-pressed="true">Entitäten</button><button id="config-tab" aria-pressed="false">YAML-Dateien</button></nav>' +
       '<landscape-configuration-panel id="configuration" hidden></landscape-configuration-panel>' +
-      '<main id="assist-main"><p>Assist-Daten exportieren, im KI-Chat optimieren lassen und die Vorschläge wieder importieren. So verbesserst du Namen, Aliase, Freigaben und räumliche Zuordnungen. Du prüfst und wählst die Änderungen vor der Übernahme aus.</p>' +
+      '<main id="assist-main"><p>Entitätsdaten exportieren, im KI-Chat optimieren lassen und die Änderungen in Landscape importieren. Namen, Aliase, Assist-Freigaben und räumliche Zuordnungen prüfst du vor der Übernahme.</p>' +
       '<div id="message" class="status" role="status" aria-live="polite" hidden></div>' +
-      '<div class="steps"><section><h2>1. Assist-Daten exportieren</h2><p>ZIP mit Entitäten, Gerätebeziehungen, Bereichen, Etagen und der Optimierungsanleitung herunterladen.</p>' +
-      '<button id="export" class="primary">Assist-ZIP herunterladen</button><p id="export-info" class="muted"></p>' +
+      '<div class="steps"><section><h2>1. Entitäten exportieren</h2><p>ZIP mit Entitätsdaten, Gerätebeziehungen, Bereichen, Etagen und der Optimierungsanleitung herunterladen.</p>' +
+      '<button id="export" class="primary">Entitäten exportieren</button><p id="export-info" class="muted"></p>' +
       '<p class="muted">Das ZIP enthält Geräte- und Raumnamen. Prüfe den Inhalt vor der Weitergabe.</p></section>' +
-      '<section><h2>2. Ergebnis importieren</h2><p>Das ZIP in einem KI-Chat wie ChatGPT hochladen und schreiben: <strong>„Landscape Assist optimieren. Beachte die Anleitung und das Schema im ZIP.“</strong></p>' +
-      '<p>Die zurückgegebene <strong>assist_optimized.json</strong> hier importieren. Landscape benötigt dafür keine LLM-API-Anbindung und kein lokales Modell.</p>' +
+      '<section><h2>2. Änderungen importieren</h2><p>Einen KI-Chat wie ChatGPT öffnen, dort das exportierte ZIP hochladen und schreiben: <strong>„Optimiere die Entitätsdaten nach der Anleitung und dem Schema im ZIP.“</strong></p>' +
+      '<p>Die zurückgegebene <strong>assist_optimized.json</strong> herunterladen und anschließend in Landscape importieren.</p>' +
       '<input id="file" type="file" accept=".json,application/json" aria-label="Optimierte JSON-Datei auswählen">' +
       '<div class="actions"><button id="recheck" hidden>Datei erneut prüfen</button></div></section></div>' +
       '<section id="preview" hidden><h2>3. Prüfen und übernehmen</h2><p id="summary"></p><p class="muted">Entity-IDs bleiben unverändert. Etagenänderungen betreffen einen ganzen Bereich und sind zunächst abgewählt.</p>' +
@@ -107,8 +107,8 @@ class LandscapeAssistPanel extends HTMLElement {
 
   async _switchMode(configuration) {
     if (configuration && !customElements.get("landscape-configuration-panel")) {
-      try { await import("/landscape_static/configuration-panel.js?v=0.3.2"); }
-      catch (error) { this._show("Configuration konnte nicht geladen werden: " + error.message, true); return; }
+      try { await import("/landscape_static/configuration-panel.js?v=0.3.3"); }
+      catch (error) { this._show("YAML-Dateien konnten nicht geladen werden: " + error.message, true); return; }
     }
     this._el("assist-main").hidden = configuration;
     this._el("configuration").hidden = !configuration;

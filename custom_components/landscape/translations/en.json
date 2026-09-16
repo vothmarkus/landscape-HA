@@ -5,7 +5,7 @@
     },
     "step": {
       "user": {
-        "description": "Exchange files with an AI chat: export Assist data or YAML configuration, review the returned changes, then apply them. Open HA Landscape in the sidebar; no LLM API connection is required. An additional CSV inventory is available through the integration's entities. Exported CSV files are public at `/local/ha_entitaeten.csv` until you delete them."
+        "description": "Export entity data or YAML files from HA Landscape in the sidebar. Upload the export in a separate AI chat, then download the result and import it into Landscape to review and apply changes. An additional CSV inventory is available through the integration's entities. Exported CSV files are public at `/local/ha_entitaeten.csv` until you delete them."
       }
     }
   },
