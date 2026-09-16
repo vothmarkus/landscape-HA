@@ -5,7 +5,7 @@
     },
     "step": {
       "user": {
-        "description": "Dateien mit einem KI-Chat austauschen: Assist-Daten oder YAML-Konfiguration exportieren, überarbeitete Dateien importieren, Änderungen prüfen und übernehmen. Öffne dazu HA Landscape in der Seitenleiste; eine LLM-API-Anbindung ist nicht erforderlich. Über die Entitäten der Integration gibt es zusätzlich einen CSV-Bestandsexport. Exportierte CSV-Dateien sind bis zum Löschen unter `/local/ha_entitaeten.csv` öffentlich erreichbar."
+        "description": "Öffne HA Landscape in der Seitenleiste und exportiere Entitätsdaten oder YAML-Dateien. Lade den Export in einem separat geöffneten KI-Chat hoch. Lade das Ergebnis herunter und importiere es in Landscape, um Änderungen zu prüfen und zu übernehmen. Über die Entitäten der Integration gibt es zusätzlich einen CSV-Bestandsexport. Exportierte CSV-Dateien sind bis zum Löschen unter `/local/ha_entitaeten.csv` öffentlich erreichbar."
       }
     }
   },

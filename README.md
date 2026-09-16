@@ -14,21 +14,21 @@ freigegebenen Vorschläge. Den Dateitransfer zum Chat und die Freigabe steuerst 
 
 **Exportieren → im KI-Chat bearbeiten → importieren → prüfen → übernehmen.**
 
-Dafür benötigt Landscape keine direkte LLM-API-Anbindung, keinen API-Schlüssel
-eines KI-Anbieters und kein lokales Modell. Du verwendest den KI-Chat separat und
-lädst die Dateien selbst hoch. Erst damit gibst du ihren Inhalt an den gewählten
+Du öffnest den KI-Chat separat und lädst die exportierten Dateien dort hoch.
+Die zurückgegebenen Dateien lädst du herunter und importierst sie anschließend
+in Landscape. Beim Hochladen im Chat gibst du ihren Inhalt an den gewählten
 Chat-Anbieter weiter. Der Chat muss die jeweiligen Dateien lesen und das
-Rückgabeformat erzeugen können; Landscape bindet dich an keinen bestimmten Anbieter.
+Rückgabeformat erzeugen können.
 
 ## Welcher Bereich passt zur Aufgabe?
 
 | Bereich | Aufgabe | Export | Rückgabe an Landscape |
 | --- | --- | --- | --- |
-| [**Configuration**](#configuration-yaml-exportieren-und-importieren) | YAML prüfen, reparieren oder erweitern, etwa Automationen, Templates und Packages | Einzelne YAML, Dateiauswahl oder YAML-Bundle; optional mit Kontext | Vollständige YAML-Dateien oder Configuration-ZIP; Diff, Dateiübernahme, HA-Prüfung und Backups |
-| [**Assist**](#assist-daten-exportieren-und-optimierungen-importieren) | Namen, Aliase, Assist-Freigaben und räumliche Zuordnungen verbessern | Assist-ZIP mit Bestand, Anleitung und JSON-Schema | `assist_optimized.json`; einzelne Vorschläge prüfen und in HA übernehmen |
+| [**Entitäten**](#entitäten-export-und-import) | Namen, Aliase, Assist-Freigaben und räumliche Zuordnungen verbessern | ZIP mit Entitätsbestand, Anleitung und JSON-Schema | `assist_optimized.json`; einzelne Vorschläge prüfen und in HA übernehmen |
+| [**YAML-Dateien**](#yaml-dateien-export-und-import) | YAML prüfen, reparieren oder erweitern, etwa Automationen, Templates und Packages | Einzelne YAML, Dateiauswahl oder YAML-Bundle; optional mit Kontext | Vollständige YAML-Dateien, einzeln oder als ZIP; Diff, Dateiübernahme, HA-Prüfung und Backups |
 | [**CSV-Bestand**](#csv-bestand-exportieren) | Entitäten und Geräte analysieren oder zusätzlichen Kontext für den Chat liefern | `ha_entitaeten.csv` | Analyse im Chat; für CSV gibt es keinen Rückimport |
 
-Die beiden Arbeitsbereiche **Assist** und **Configuration** stehen nach der
+Die beiden Arbeitsbereiche **Entitäten** und **YAML-Dateien** stehen nach der
 [Einrichtung](#installation-mit-hacs) Administratoren in der Seitenleiste unter
 **HA Landscape** zur Verfügung. Den ergänzenden CSV-Export findest du an den
 Entitäten des Geräts **HA Landscape**.
@@ -40,21 +40,21 @@ Entitäten des Geräts **HA Landscape**.
 2. Den Export im KI-Chat hochladen und die gewünschte Änderung oder den Fehler
    beschreiben. Fehlermeldungen und das gewünschte Verhalten helfen bei der Analyse.
 3. Das Ergebnis als Datei herunterladen: vollständige YAML für **Datei ersetzen**
-   oder den JSON-Patch für **Assist**. Eine reine Erklärung oder ein Diff ist keine
+   oder den JSON-Patch für **Entitäten**. Eine reine Erklärung oder ein Diff ist keine
    importierbare Ersatzdatei.
 4. Das Ergebnis im zugehörigen Landscape-Bereich importieren, Ziel und Vorschau
    prüfen und die gewünschten Änderungen freigeben.
 5. Nach einer erfolgreichen YAML-Übernahme die betroffenen Bereiche in HA neu
-   laden oder HA neu starten. Assist-Änderungen schreibt Landscape direkt in die
+   laden oder HA neu starten. Entitätsänderungen schreibt Landscape direkt in die
    entsprechenden HA-Einstellungen.
 
 Die Analyse findet im gewählten KI-Chat statt. Landscape prüft Dateiformate,
 Ausgangsstände und die jeweils unterstützten Änderungen lokal in Home Assistant.
 Die inhaltliche Entscheidung, welche Vorschläge sinnvoll sind, bleibt bei dir.
 
-## Configuration: YAML exportieren und importieren
+## YAML-Dateien: Export und Import
 
-**HA Landscape → Configuration** öffnet den durchsuchbaren YAML-Dateibaum.
+**HA Landscape → YAML-Dateien** öffnet den durchsuchbaren YAML-Dateibaum.
 Alle Dateiaktionen sind ausschließlich für angemeldete HA-Administratoren verfügbar.
 
 ### Export
@@ -64,9 +64,8 @@ Alle Dateiaktionen sind ausschließlich für angemeldete HA-Administratoren verf
   wird das Datum ergänzt, beispielsweise `automations_2026-09-15.yaml`.
 - **Dateiauswahl:** Gewünschte Dateien anhaken und **Auswahl exportieren** wählen.
   Mehrere Dateien werden als ZIP mit ihren relativen Pfaden heruntergeladen.
-- **Komplett-Bundle exportieren:** Alle zugänglichen YAML-Dateien des
-  Configuration-Bereichs exportieren, einschließlich noch nicht eingebundener
-  eigener YAML-Dateien.
+- **Komplett-Bundle exportieren:** Alle zugänglichen YAML-Dateien exportieren,
+  einschließlich noch nicht eingebundener eigener YAML-Dateien.
 - **Mit Kontext:** ZIP mit YAML und je einer `.landscape.json`. Die Begleitdatei
   enthält Zielpfad, erkannte Rolle, Includes, übergeordnete Einbindung, textuell
   gefundene Entitäts-/Aktionsreferenzen und die SHA-256-Prüfsumme des Originals.
@@ -103,7 +102,7 @@ und nicht betroffene Abschnitte. Verändere die .landscape.json-Begleitdatei nic
 Erkläre die vorgenommenen Änderungen zusätzlich kurz.
 ```
 
-Die Rückgabe unter **YAML importieren und prüfen** auswählen und **Datei ersetzen**
+Die Rückgabe unter **YAML importieren** auswählen und **Datei ersetzen**
 verwenden. Zusätze im Dateinamen sind erlaubt: Landscape kann etwa
 `configuration_blitzer_korrigiert.yaml` der vorhandenen `configuration.yaml`
 zuordnen. Ziel und vollständigen Diff vor der Übernahme prüfen.
@@ -124,7 +123,7 @@ importieren** wählen. Die Einbindung in die HA-Konfiguration anschließend prü
 ### Import und Diff
 
 1. Bei einer vorhandenen Datei **Import / Diff** anklicken, oder unten eine oder
-   mehrere YAML-Dateien, passende Kontextdateien oder ein Configuration-ZIP wählen.
+   mehrere YAML-Dateien, passende Kontextdateien oder ein ZIP mit YAML-Dateien wählen.
 2. Im Dropdown **Vorhandene Zieldatei** das Ziel und darunter die Importart prüfen.
    Landscape wählt anhand des passendsten Dateinamens vor: etwa
    `configuration_blitzer_korrigiert.yaml` → `configuration.yaml` oder
@@ -207,14 +206,15 @@ groß, eine kleinere Dateiauswahl verwenden. Die Inventargrenzen gelten für den
 gesamten zugänglichen YAML-Bestand. Die Oberfläche zeigt die letzten 20 Backups;
 ältere Backups werden nicht automatisch gelöscht. Symlinks werden nicht verfolgt.
 
-## Assist: Daten exportieren und Optimierungen importieren
+## Entitäten: Export und Import
 
-In der Seitenleiste steht Administratoren **HA Landscape → Assist** zur Verfügung.
+In der Seitenleiste steht Administratoren **HA Landscape → Entitäten** zur Verfügung.
 
-1. **Assist-ZIP herunterladen** anklicken.
-2. ZIP in einem KI-Chat wie ChatGPT hochladen und **„Landscape Assist optimieren.
-   Beachte die Anleitung und das Schema im ZIP.“** schreiben.
-3. Die erzeugte **assist_optimized.json** herunterladen und in Landscape auswählen.
+1. **Entitäten exportieren** anklicken und das ZIP herunterladen.
+2. Einen KI-Chat wie ChatGPT öffnen, dort das ZIP hochladen und **„Optimiere die
+   Entitätsdaten nach der Anleitung und dem Schema im ZIP.“** schreiben.
+3. Die erzeugte **assist_optimized.json** herunterladen und in Landscape unter
+   **Entitäten → Änderungen importieren** auswählen.
 4. Vorschau prüfen: jede Namensänderung, jeder Alias, jede Assist-Freigabe und
    jede Bereichs-/Etagenzuweisung hat eine eigene Checkbox.
 5. **Ausgewählte übernehmen**, **Alle übernehmen** oder **Verwerfen** wählen.
@@ -231,12 +231,12 @@ Die Anleitung gilt auch für andere KI-Chats, die diese Dateien verarbeiten kön
 Zurückgegeben wird ein **JSON-Patch** mit Änderungsvorschlägen nach dem mitgelieferten
 Schema. `landscape.json` bleibt der ursprüngliche Export; `source_id` und alte
 Werte im Patch müssen zu ihm passen. Die Datei `assist_optimized.json` wird im
-Bereich **Assist** importiert.
+Bereich **Entitäten** importiert. Der Import ändert die unterstützten Eigenschaften
+bestehender Entitäten; er legt keine neuen HA-Entitäten an.
 
 So kann ein KI-Chat helfen, ähnliche Geräte sprachlich besser unterscheidbar zu
-machen. Das in HA konfigurierte Sprach- oder Gesprächsmodell wird durch Landscape
-nicht geändert; es arbeitet anschließend mit den übernommenen Namen, Aliasen und
-Freigaben weiter.
+machen. Übernommene Namen, Aliase und Freigaben stehen anschließend Home Assistant
+Assist für Sprachbefehle zur Verfügung.
 
 ### Vorschau und Übernahme
 
@@ -264,7 +264,7 @@ Freigaben weiter.
   Eine Vorschau ist für den jeweiligen Administrator eine Stunde gültig und
   wird nach einer Übernahme verbraucht. Bei Ablauf die Datei erneut prüfen.
 
-Der Assist-Export wird über die angemeldete Administrator-Sitzung geladen
+Der Entitäten-Export wird über die angemeldete Administrator-Sitzung geladen
 und **nicht** im öffentlichen `www`-Ordner abgelegt. Die Exportstände und das
 letzte Ergebnisprotokoll bleiben in HA gespeichert, bis sie ersetzt oder die
 Integration gelöscht wird. Geräte- und Raumnamen sowie reduzierte Zustände können
@@ -327,7 +327,7 @@ Verlauf und Langzeitstatistiken gehören nicht zum Export.
 
 Die Datei verwendet Excel-taugliches UTF-8 mit Semikolon als Trennzeichen. Ein
 neuer Export ersetzt die vorherige CSV vollständig. Geänderte CSV-Dateien lassen
-sich nicht in Landscape zurückimportieren; Änderungen an YAML oder Assist-Daten
+sich nicht in Landscape zurückimportieren; Änderungen an YAML oder Entitätsdaten
 laufen über die jeweiligen Arbeitsbereiche und Dateiformate.
 
 Nach der Einrichtung existieren drei Entitäten am Gerät **HA Landscape**:
@@ -406,10 +406,10 @@ Registry-Daten bleiben enthalten; die Datei vor der Weitergabe prüfen.
 ## Hinweise bei Problemen im Dateiaustausch
 
 - **Der KI-Chat kann kein ZIP lesen:** Die enthaltenen Dateien entpacken und
-  gemeinsam übergeben. Beim Assist-Export gehören Bestand, Schema und Anleitung
+  gemeinsam übergeben. Beim Entitäten-Export gehören Bestand, Schema und Anleitung
   zusammen.
 - **Dem Chat fehlt Kontext:** Bei Änderungen über mehrere Includes hinweg die
-  zugehörigen YAML-Dateien mitgeben. Ein Assist- oder CSV-Export kann zusätzliche
+  zugehörigen YAML-Dateien mitgeben. Ein Entitäten- oder CSV-Export kann zusätzliche
   Informationen über tatsächlich vorhandene Entitäten liefern.
 - **„Seit dem Export geändert“:** Den aktuellen Stand mit neuem Kontext exportieren
   und die gewünschten Änderungen damit abgleichen lassen. Die Begleitdateien

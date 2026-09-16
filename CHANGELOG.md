@@ -1,5 +1,17 @@
 # Änderungen
 
+## 0.3.3
+
+- Die Bereiche heißen jetzt „Entitäten“ und „YAML-Dateien“.
+- Entitäten-Export und Import der Änderungen klar benannt; die YAML-Abschnitte
+  heißen einheitlich „YAML exportieren“ und „YAML importieren“.
+- Upload im separat geöffneten KI-Chat und Rückimport in Landscape ausdrücklich
+  unterschieden; missverständliches „hier“ aus den Oberflächentexten entfernt.
+- Hinweise auf API-Anbindung und lokale KI aus Oberfläche, Einrichtung und
+  aktueller Anleitung entfernt.
+- README an die neuen Bereichsnamen angepasst. Funktionen und Austauschformate
+  bleiben unverändert.
+
 ## 0.3.2
 
 - Export und Import in den Überschriften und Erklärungstexten beider Arbeitsbereiche
