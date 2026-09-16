@@ -5,7 +5,7 @@
     },
     "step": {
       "user": {
-        "description": "Erstellt bei Bedarf eine vollständige CSV-Bestandsaufnahme aller Home-Assistant-Entitäten. Die Datei wird vorübergehend unter `/local/ha_entitaeten.csv` bereitgestellt."
+        "description": "Dateien mit einem KI-Chat austauschen: Assist-Daten oder YAML-Konfiguration exportieren, überarbeitete Dateien importieren, Änderungen prüfen und übernehmen. Öffne dazu HA Landscape in der Seitenleiste; eine LLM-API-Anbindung ist nicht erforderlich. Über die Entitäten der Integration gibt es zusätzlich einen CSV-Bestandsexport. Exportierte CSV-Dateien sind bis zum Löschen unter `/local/ha_entitaeten.csv` öffentlich erreichbar."
       }
     }
   },

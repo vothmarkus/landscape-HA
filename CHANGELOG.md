@@ -1,5 +1,19 @@
 # Änderungen
 
+## 0.3.2
+
+- Export und Import in den Überschriften und Erklärungstexten beider Arbeitsbereiche
+  sichtbar gemacht; Configuration beginnt jetzt mit „YAML exportieren“.
+- README auf den teilautomatisierten Dateiaustausch mit KI-Chats ausgerichtet:
+  exportieren, im Chat bearbeiten, importieren, prüfen und übernehmen.
+- Dateiformate, Kontextdateien und konkrete Abläufe für einzelne YAML-Dateien,
+  Dateiauswahlen, neue Packages und Assist-Optimierungen erklärt.
+- Einrichtungsbeschreibungen auf Deutsch und Englisch um Assist und Configuration
+  ergänzt; die CSV-Bestandsaufnahme als ergänzenden Export eingeordnet.
+- Dokumentation von CSV-Maskierung, Vorschaugültigkeit, Inventargrenzen und
+  Rückgabeformaten an das tatsächliche Verhalten angeglichen.
+- Funktionsumfang, Dateiformate und Import-/Exportlogik bleiben unverändert.
+
 ## 0.3.1
 
 - Zusätzliches Dropdown mit allen vorhandenen YAML-Zieldateien beim Import.

@@ -33,33 +33,34 @@ class LandscapeConfigurationPanel extends HTMLElement {
         @media(max-width:700px){main{padding:16px 12px}section{padding:14px}.file{flex-wrap:wrap}.file .actions{width:100%;margin-left:28px}.actions button{flex:1}.folder{padding-left:10px}pre{max-width:100%}}
       </style>
       <main>
-        <p>Einzelne YAML-Dateien bearbeiten, eine Auswahl teilen oder die YAML-Konfiguration als Bundle sichern.</p>
+        <p>YAML exportieren, im KI-Chat überarbeiten lassen und mit Diff-Prüfung wieder importieren. Du überträgst die Dateien und bestätigst die Änderungen; Landscape benötigt dafür keine LLM-API-Anbindung.</p>
         <div id="message" class="status" role="status" aria-live="polite" hidden></div>
         <section>
-          <h2>Configuration</h2>
-          <p class="muted">Dateien unter /config. secrets.yaml, interne Speicherdateien und Programmverzeichnisse sind ausgenommen. Direkt eingetragene Passwörter bleiben im YAML enthalten; vor dem Teilen prüfen.</p>
+          <h2>YAML exportieren</h2>
+          <p>Einzeldateien, eine Auswahl oder das komplette YAML-Bundle aus /config herunterladen. Optional mit Dateikontext für den KI-Chat.</p>
+          <p class="muted">secrets.yaml, secrets.yml, interne Speicherdateien und Programmverzeichnisse sind ausgenommen. Direkt eingetragene Passwörter bleiben im YAML enthalten; vor dem Teilen prüfen.</p>
           <div class="actions"><button id="refresh">Aktualisieren</button><button id="all">Alle auswählen</button><button id="none">Auswahl aufheben</button></div>
           <input id="search" type="search" placeholder="Dateipfad oder Typ suchen" aria-label="YAML-Dateien suchen">
           <div id="tree" class="tree"></div><p id="count" class="muted"></p>
           <div class="actions"><label><input id="context" type="checkbox">Mit Kontext (ZIP mit Begleitdateien)</label><label><input id="dated" type="checkbox">Datum im Einzeldateinamen</label></div>
-          <div class="actions"><button id="export-selection" class="primary">Auswahl exportieren</button><button id="export-all">Komplett-Bundle</button></div>
+          <div class="actions"><button id="export-selection" class="primary">Auswahl exportieren</button><button id="export-all">Komplett-Bundle exportieren</button></div>
         </section>
         <section id="viewer" hidden><h2 id="view-title"></h2><p id="view-info" class="muted"></p><pre id="view-content"></pre><button id="close-view">Schließen</button></section>
         <section>
-          <h2>YAML importieren</h2>
-          <p>Eine oder mehrere YAML-Dateien auswählen, optional mit .landscape.json, oder ein Configuration-ZIP hochladen. Ziel und Importart anschließend prüfen.</p>
+          <h2>YAML importieren und prüfen</h2>
+          <p>Überarbeitete oder neue YAML-Dateien aus dem KI-Chat oder ein Configuration-ZIP auswählen. Unveränderte .landscape.json-Begleitdateien kannst du mit hochladen. Anschließend Ziel, Importart und Diff prüfen.</p>
           <input id="upload" type="file" multiple accept=".yaml,.yml,.json,.zip" aria-label="Konfigurationsdateien importieren">
           <p id="target-hint" class="muted"></p><div id="imports"></div>
           <button id="preview-button" class="primary" hidden>Prüfen und Diff anzeigen</button>
         </section>
         <section id="preview" hidden>
-          <h2>Änderungen prüfen</h2><p id="preview-summary"></p>
-          <p class="muted">YAML und Einbindung sind vorgeprüft. Beim Übernehmen werden Backups erstellt und die gesamte HA-Konfiguration geprüft. Neue Prüfprobleme führen zur automatischen Rücksetzung.</p>
+          <h2>Diff prüfen und übernehmen</h2><p id="preview-summary"></p>
+          <p class="muted">YAML-Syntax und Einbindung sind vorgeprüft. Erst beim Übernehmen folgen Backups und die vollständige HA-Konfigurationsprüfung. Neue Prüfprobleme führen zur automatischen Rücksetzung.</p>
           <div id="diffs"></div>
           <div class="actions"><button id="apply" class="primary">Änderungen übernehmen</button><button id="discard">Verwerfen</button></div>
         </section>
         <section id="result" hidden><h2>Ergebnis</h2><p id="result-text"></p><pre id="result-details" hidden></pre><button id="download-report">Protokoll herunterladen</button></section>
-        <section><h2>Backups</h2><p class="muted">Jede Übernahme sichert die Originaldateien. Zum Zurücksetzen zuerst die Vorschau öffnen. Zwischenzeitlich geänderte Dateien sind vor Überschreiben geschützt.</p><div id="backups"></div></section>
+        <section><h2>Backups</h2><p class="muted">Landscape sichert die Originale geänderter Dateien. Zum Zurücksetzen zuerst die Vorschau öffnen. Zwischenzeitlich geänderte Dateien sind vor Überschreiben geschützt.</p><div id="backups"></div></section>
       </main>`;
     this._el("refresh").onclick = () => this._run(() => this._refresh());
     this._el("all").onclick = () => { this._selected = new Set(this._files.map(x => x.path)); this._renderTree(); };

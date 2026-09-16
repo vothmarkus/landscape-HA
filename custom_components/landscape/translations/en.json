@@ -5,7 +5,7 @@
     },
     "step": {
       "user": {
-        "description": "Creates a complete CSV inventory of Home Assistant entities on demand. The file is temporarily published at `/local/ha_entitaeten.csv`."
+        "description": "Exchange files with an AI chat: export Assist data or YAML configuration, review the returned changes, then apply them. Open HA Landscape in the sidebar; no LLM API connection is required. An additional CSV inventory is available through the integration's entities. Exported CSV files are public at `/local/ha_entitaeten.csv` until you delete them."
       }
     }
   },
