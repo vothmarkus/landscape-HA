@@ -7,6 +7,9 @@ const path = require('node:path');
 
 (async () => {
   const frontend = path.join(__dirname, '../custom_components/landscape/frontend');
+  const yamlBytes = Buffer.from('\uFEFF# Gaszähler\r\ndefault_config:\r\n');
+  const zipBytes = Buffer.from('504b0506000000000000000000000000000000000000', 'hex');
+  const downloads = [];
   const server = http.createServer((request, response) => {
     const pathname = new URL(request.url, 'http://localhost').pathname;
     if (pathname === '/') {
@@ -15,6 +18,12 @@ const path = require('node:path');
     } else if (['/landscape_static/assist-panel.js', '/landscape_static/configuration-panel.js'].includes(pathname)) {
       response.setHeader('Content-Type', 'text/javascript; charset=utf-8');
       response.end(fs.readFileSync(path.join(frontend, path.basename(pathname))));
+    } else if (pathname.startsWith('/api/landscape/download/fixture/')) {
+      const filename = path.basename(pathname);
+      downloads.push(filename);
+      response.setHeader('Content-Disposition', 'attachment; filename="' + filename + '"');
+      response.setHeader('Content-Type', filename.endsWith('.zip') ? 'application/zip' : filename.endsWith('.json') ? 'application/json' : 'application/yaml');
+      response.end(filename.endsWith('.zip') ? zipBytes : filename.endsWith('.json') ? '{"status":"applied"}' : yamlBytes);
     } else { response.statusCode = 404; response.end(); }
   });
   await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
@@ -25,6 +34,8 @@ const path = require('node:path');
     page.on('pageerror', error => errors.push(error.message));
     await page.goto('http://127.0.0.1:' + server.address().port);
     await page.evaluate(() => {
+      // WebViews may ignore a.download; the HTTP response must supply the name.
+      Object.defineProperty(HTMLAnchorElement.prototype, 'download', { get() { return ''; }, set() {} });
       const inventory = [
         ['configuration.yaml', 'configuration', false], ['automations.yaml', 'automations', true],
         ['scripts.yaml', 'scripts', true], ['packages/gasmeter.yaml', 'package', false],
@@ -39,9 +50,11 @@ const path = require('node:path');
       element.panel = { config: { entry_id: 'test-entry' } };
       element.hass = { callWS: async msg => {
         window.calls.push(msg);
-        if (msg.type === 'landscape/assist') return { exports: [], report: null };
+        const download = filename => ({ filename, download_url: '/api/landscape/download/fixture/' + filename + '?authSig=fixture' });
+        if (msg.type === 'landscape/download_report') return download(msg.kind === 'assist' ? 'assist_apply_report.json' : 'landscape_configuration_report.json');
+        if (msg.type === 'landscape/assist') return msg.action === 'export' ? { ...download('assist_landscape.zip'), entity_count: 1, source_id: 'source-one' } : { exports: [], report: { status: 'applied', applied_count: 1 } };
         if (msg.action === 'list') return { files: inventory, skipped: [], backups: applied ? [{ id: 'backup-one', created_at: '2026-09-15T10:00:00Z', status: 'applied', files: [{ path: 'automations.yaml' }], rollback_errors: [] }] : [] };
-        if (msg.action === 'export') return { filename: msg.context || msg.paths?.length !== 1 ? 'configuration.zip' : 'automations.yaml', mime: 'application/yaml', content: btoa('[]\n'), file_count: msg.paths?.length || inventory.length };
+        if (msg.action === 'export') return { ...download(msg.context || msg.paths?.length !== 1 ? 'configuration.zip' : 'automations.yaml'), file_count: msg.paths?.length || inventory.length };
         if (msg.action === 'view') return { type: 'automations', content: content + '# <img src=x onerror="window.injected=true">', included_by: [{ path: 'configuration.yaml', key: 'automation', tag: '!include' }], warnings: [] };
         if (msg.action === 'inspect') {
           const suggestions = {
@@ -71,10 +84,16 @@ const path = require('node:path');
     await config.getByRole('checkbox', { name: 'automations.yaml auswählen', exact: true }).check();
     let downloadPromise = page.waitForEvent('download');
     await el('export-selection').click(); await idle();
-    assert.equal((await downloadPromise).suggestedFilename(), 'automations.yaml');
+    const yamlDownload = await downloadPromise;
+    assert.equal(yamlDownload.suggestedFilename(), 'automations.yaml');
+    assert.deepEqual(fs.readFileSync(await yamlDownload.path()), yamlBytes);
+    assert.equal(await page.evaluate(() => window.calls.filter(x => x.action === 'export').at(-1).download), true);
     await config.getByRole('checkbox', { name: 'scripts.yaml auswählen', exact: true }).check();
     await el('context').check(); downloadPromise = page.waitForEvent('download');
-    await el('export-selection').click(); await idle(); await downloadPromise;
+    await el('export-selection').click(); await idle();
+    const zipDownload = await downloadPromise;
+    assert.equal(zipDownload.suggestedFilename(), 'configuration.zip');
+    assert.deepEqual(fs.readFileSync(await zipDownload.path()), zipBytes);
     assert.deepEqual(await page.evaluate(() => window.calls.filter(x => x.action === 'export').at(-1).paths), ['automations.yaml', 'scripts.yaml']);
     await el('tree').locator('.file').filter({ hasText: 'automations.yaml' }).getByText('Anzeigen', { exact: true }).click(); await idle();
     assert.equal(await el('view-content').locator('img').count(), 0);
@@ -165,6 +184,10 @@ const path = require('node:path');
     const applyCall = await page.evaluate(() => window.calls.find(x => x.action === 'apply'));
     assert.equal(applyCall.preview_id, 'preview-one');
     assert.equal(applyCall.files, undefined);
+    downloadPromise = page.waitForEvent('download');
+    await el('download-report').click(); await idle();
+    assert.equal((await downloadPromise).suggestedFilename(), 'landscape_configuration_report.json');
+    assert.equal(await page.evaluate(() => JSON.parse(window.calls.filter(x => x.type === 'landscape/download_report').at(-1).report).status), 'applied');
     await el('backups').locator('summary').click();
     await el('backups').getByRole('button', { name: 'Rücksetzung prüfen' }).click(); await idle();
     assert.equal(await el('preview').isVisible(), true);
@@ -172,6 +195,13 @@ const path = require('node:path');
     assert.equal(await el('preview').isVisible(), false);
     await page.locator('#assist-tab').click();
     assert.equal(await page.locator('#assist-main').isVisible(), true);
+    downloadPromise = page.waitForEvent('download');
+    await page.locator('#export').click();
+    assert.equal((await downloadPromise).suggestedFilename(), 'assist_landscape.zip');
+    downloadPromise = page.waitForEvent('download');
+    await page.locator('#report').click();
+    assert.equal((await downloadPromise).suggestedFilename(), 'assist_apply_report.json');
+    assert.deepEqual(downloads, ['automations.yaml', 'configuration.zip', 'landscape_configuration_report.json', 'assist_landscape.zip', 'assist_apply_report.json']);
     assert.equal(await page.evaluate(() => window.injected), undefined);
     assert.deepEqual(errors, []);
     console.log('Configuration UI: target suggestions, manual selection, ambiguous names, new paths, explicit target priority, merge availability, review invalidation, downloads, escaping, mobile layout, apply, restore and Assist navigation passed.');

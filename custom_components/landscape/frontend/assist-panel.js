@@ -69,9 +69,8 @@ class LandscapeAssistPanel extends HTMLElement {
     this._el("assist-tab").onclick = () => this._switchMode(false);
     this._el("config-tab").onclick = () => this._switchMode(true);
     this._el("export").addEventListener("click", () => this._run(async () => {
-      const result = await this._call("export");
-      const bytes = Uint8Array.from(atob(result.content), (char) => char.charCodeAt(0));
-      this._download(result.filename, bytes, "application/zip");
+      const result = await this._call("export", { download: true });
+      this._download(result.filename, result.download_url);
       this._show(result.entity_count + " Entitäten exportiert. ZIP in einem KI-Chat wie ChatGPT hochladen.");
       this._el("export-info").textContent = "Export-ID: " + result.source_id;
     }));
@@ -98,16 +97,17 @@ class LandscapeAssistPanel extends HTMLElement {
       this._el("recheck").hidden = true;
       this._show("Vorschläge verworfen.");
     }));
-    this._el("report").addEventListener("click", () => {
-      this._download("assist_apply_report.json", JSON.stringify(this._report, null, 2), "application/json");
-    });
+    this._el("report").addEventListener("click", () => this._run(async () => {
+      const result = await this._hass.callWS({ type: "landscape/download_report", kind: "assist", report: JSON.stringify(this._report, null, 2) });
+      this._download(result.filename, result.download_url);
+    }));
   }
 
   _el(id) { return this.shadowRoot.getElementById(id); }
 
   async _switchMode(configuration) {
     if (configuration && !customElements.get("landscape-configuration-panel")) {
-      try { await import("/landscape_static/configuration-panel.js?v=0.3.3"); }
+      try { await import("/landscape_static/configuration-panel.js?v=0.3.4"); }
       catch (error) { this._show("YAML-Dateien konnten nicht geladen werden: " + error.message, true); return; }
     }
     this._el("assist-main").hidden = configuration;
@@ -340,15 +340,15 @@ class LandscapeAssistPanel extends HTMLElement {
     this._show(text, !["applied", "unchanged"].includes(report.status) || !!report.persistence_error);
   }
 
-  _download(filename, content, type) {
-    const url = URL.createObjectURL(new Blob([content], { type }));
+  _download(filename, url) {
     const link = document.createElement("a");
     link.href = url;
     link.download = filename;
+    link.target = "_blank";
+    link.rel = "noopener";
     document.body.append(link);
     link.click();
     link.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 60000);
   }
 }
 

@@ -10,6 +10,7 @@ from homeassistant.core import HomeAssistant
 
 from .configuration_yaml import ConfigurationError
 from .const import DOMAIN
+from .downloads import DownloadError, async_export_download
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -34,6 +35,7 @@ _LOGGER = logging.getLogger(__name__)
         vol.Optional("paths"): [str],
         vol.Optional("context"): bool,
         vol.Optional("dated"): bool,
+        vol.Optional("download"): bool,
         vol.Optional("files"): [dict],
         vol.Optional("archive"): str,
         vol.Optional("preview_id"): str,
@@ -61,6 +63,8 @@ async def websocket_configuration(
                 if key not in {"id", "type", "entry_id", "action"}
             }
             result = await workspace.async_read(action, **fields)
+            if action == "export" and msg.get("download"):
+                result = async_export_download(hass, connection, result, result["mime"])
         elif action == "preview":
             result = await workspace.async_preview(
                 connection.user.id, msg.get("files", [])
@@ -81,7 +85,7 @@ async def websocket_configuration(
             else:
                 workspace.discard(msg["preview_id"], connection.user.id)
                 result = {"discarded": True}
-    except (ConfigurationError, KeyError) as err:
+    except (ConfigurationError, DownloadError, KeyError) as err:
         connection.send_error(msg["id"], "invalid_configuration", str(err))
         return
     except Exception:

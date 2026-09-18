@@ -57,6 +57,14 @@ Die inhaltliche Entscheidung, welche Vorschläge sinnvoll sind, bleibt bei dir.
 **HA Landscape → YAML-Dateien** öffnet den durchsuchbaren YAML-Dateibaum.
 Alle Dateiaktionen sind ausschließlich für angemeldete HA-Administratoren verfügbar.
 
+YAML-, ZIP- und Protokoll-Downloads liefern den Dateinamen auch an die
+HA-Companion-App mit. Die Download-Links gelten bis zu fünf Minuten und sind an die
+anfragende Administratorsitzung gebunden. Ist ein Link abgelaufen, den Export
+bzw. Protokoll-Download erneut anklicken. Die vorbereiteten Downloads liegen nur
+vorübergehend im Arbeitsspeicher, nicht unter `/local/`. Bereits heruntergeladene
+Dateien bleiben verwendbar. Die separate CSV-Bestandsaufnahme behält ihren
+bisherigen Download-Pfad.
+
 ### Export
 
 - **Einzeldatei:** An einer Datei **Exportieren** anklicken. Ohne Kontext entsteht
