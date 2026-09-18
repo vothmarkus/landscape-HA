@@ -1,5 +1,15 @@
 # Änderungen
 
+## 0.3.4
+
+- Downloads mit explizitem Dateinamen statt Blob-URLs: Die Android-Companion-App
+  kann YAML-Dateien dadurch als `configuration.yaml` statt einer zufälligen `.bin`
+  speichern. Gilt ebenfalls für ZIP-Exporte und JSON-Ergebnisprotokolle.
+- Kurzlebige, an die Administratorsitzung gebundene Download-Links; Exportdaten
+  bleiben im begrenzten Arbeitsspeicher und werden spätestens nach fünf Minuten entfernt.
+  Keine YAML-/ZIP-/Protokolldateien unter dem öffentlichen `/local/`-Pfad.
+- Austauschformate, YAML-Inhalte und Importfunktionen bleiben unverändert.
+
 ## 0.3.3
 
 - Die Bereiche heißen jetzt „Entitäten“ und „YAML-Dateien“.

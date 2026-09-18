@@ -1,4 +1,4 @@
-/* YAML travels only through authenticated Home Assistant WebSockets. */
+/* YAML uses authenticated WebSockets and short-lived signed downloads. */
 class LandscapeConfigurationPanel extends HTMLElement {
   constructor() {
     super(); this.attachShadow({ mode: "open" });
@@ -93,7 +93,10 @@ class LandscapeConfigurationPanel extends HTMLElement {
       this._clearPreview(); this._show("Vorschau verworfen. Keine Datei geändert.");
     });
     this._el("close-view").onclick = () => { this._el("viewer").hidden = true; };
-    this._el("download-report").onclick = () => this._download("landscape_configuration_report.json", JSON.stringify(this._report, null, 2), "application/json");
+    this._el("download-report").onclick = () => this._run(async () => {
+      const result = await this._hass.callWS({ type: "landscape/download_report", kind: "configuration", report: JSON.stringify(this._report, null, 2) });
+      this._download(result.filename, result.download_url);
+    });
   }
   _load() {
     if (!this._built || !this._hass || !this._panel || this._loaded) return;
@@ -162,10 +165,10 @@ class LandscapeConfigurationPanel extends HTMLElement {
     this._el("view-content").textContent = file.content; this._el("viewer").scrollIntoView({ block: "start", behavior: "smooth" });
   }
   async _export(paths) {
-    const fields = { context: this._el("context").checked, dated: this._el("dated").checked };
+    const fields = { context: this._el("context").checked, dated: this._el("dated").checked, download: true };
     if (paths !== null) fields.paths = paths;
     const result = await this._call("export", fields);
-    this._download(result.filename, Uint8Array.from(atob(result.content), char => char.charCodeAt(0)), result.mime);
+    this._download(result.filename, result.download_url);
     this._show(result.file_count + " Datei(en) exportiert.");
   }
   async _upload(files) {
@@ -280,10 +283,10 @@ class LandscapeConfigurationPanel extends HTMLElement {
       container.append(details);
     }
   }
-  _download(filename, content, type) {
-    const url = URL.createObjectURL(new Blob([content], { type }));
+  _download(filename, url) {
     const link = document.createElement("a"); link.href = url; link.download = filename;
-    this.shadowRoot.append(link); link.click(); link.remove(); setTimeout(() => URL.revokeObjectURL(url), 30000);
+    link.target = "_blank"; link.rel = "noopener";
+    document.body.append(link); link.click(); link.remove();
   }
 }
 customElements.define("landscape-configuration-panel", LandscapeConfigurationPanel);

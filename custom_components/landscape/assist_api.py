@@ -15,6 +15,12 @@ from .assist import AssistOptimizer
 from .assist_schema import PatchError
 from .configuration_api import websocket_configuration
 from .const import DOMAIN, VERSION
+from .downloads import (
+    DownloadError,
+    LandscapeDownloadView,
+    async_export_download,
+    websocket_download_report,
+)
 
 _LOGGER = logging.getLogger(__name__)
 PANEL_PATH = "landscape-assist"
@@ -41,6 +47,8 @@ async def async_setup_panel(hass: HomeAssistant, entry_id: str) -> None:
         )
         websocket_api.async_register_command(hass, websocket_assist)
         websocket_api.async_register_command(hass, websocket_configuration)
+        websocket_api.async_register_command(hass, websocket_download_report)
+        hass.http.register_view(LandscapeDownloadView(hass))
         hass.data[DATA_REGISTERED] = True
     await panel_custom.async_register_panel(
         hass,
@@ -69,6 +77,7 @@ def async_unload_panel(hass: HomeAssistant) -> None:
         vol.Optional("patch"): str,
         vol.Optional("preview_id"): str,
         vol.Optional("selected"): [str],
+        vol.Optional("download"): bool,
     }
 )
 @websocket_api.require_admin
@@ -91,6 +100,10 @@ async def websocket_assist(
             result = optimizer.status()
         elif action == "export":
             result = await optimizer.async_export()
+            if msg.get("download"):
+                result = async_export_download(
+                    hass, connection, result, "application/zip"
+                )
         elif action == "preview":
             if "patch" not in msg:
                 raise PatchError("Bitte eine JSON-Importdatei auswählen.")
@@ -105,7 +118,7 @@ async def websocket_assist(
             else:
                 optimizer.discard(msg["preview_id"], user_id)
                 result = {"discarded": True}
-    except PatchError as err:
+    except (DownloadError, PatchError) as err:
         connection.send_error(msg["id"], "invalid_patch", str(err))
         return
     except Exception:
