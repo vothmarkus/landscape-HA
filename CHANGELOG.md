@@ -1,5 +1,14 @@
 # Änderungen
 
+## 0.3.5
+
+- Dateiauswahl für den YAML-Import ohne Betriebssystem-Dateitypfilter geöffnet.
+  Die Android-Companion-App kann dadurch auch `.yaml` und `.yml` auswählen,
+  wenn Android sie als allgemeine Datei oder „BIN“ einordnet.
+- Nicht unterstützte Dateiendungen werden direkt nach der Auswahl mit einem
+  verständlichen Hinweis abgewiesen. Dateiinhalte werden dafür noch nicht gelesen.
+- Größenlimit, Zielauswahl, YAML-Prüfung, Diff und Übernahme bleiben unverändert.
+
 ## 0.3.4
 
 - Downloads mit explizitem Dateinamen statt Blob-URLs: Die Android-Companion-App
