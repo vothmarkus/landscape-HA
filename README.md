@@ -130,6 +130,12 @@ importieren** wählen. Die Einbindung in die HA-Konfiguration anschließend prü
 
 ### Import und Diff
 
+Die Dateiauswahl zeigt alle Dateitypen, damit die Android-Companion-App YAML
+nicht wegen einer unbekannten Dateitypzuordnung ausblendet. Entscheidend ist die
+Endung `.yaml`/`.yml`, auch wenn Android „Datei“ oder „BIN“ anzeigt. Landscape
+weist andere Dateiendungen nach der Auswahl ab; Kontextdateien (`.json`) und
+ZIPs werden weiterhin unterstützt. Die Inhaltsprüfung folgt im Importablauf.
+
 1. Bei einer vorhandenen Datei **Import / Diff** anklicken, oder unten eine oder
    mehrere YAML-Dateien, passende Kontextdateien oder ein ZIP mit YAML-Dateien wählen.
 2. Im Dropdown **Vorhandene Zieldatei** das Ziel und darunter die Importart prüfen.

@@ -57,13 +57,14 @@ const path = require('node:path');
         if (msg.action === 'export') return { ...download(msg.context || msg.paths?.length !== 1 ? 'configuration.zip' : 'automations.yaml'), file_count: msg.paths?.length || inventory.length };
         if (msg.action === 'view') return { type: 'automations', content: content + '# <img src=x onerror="window.injected=true">', included_by: [{ path: 'configuration.yaml', key: 'automation', tag: '!include' }], warnings: [] };
         if (msg.action === 'inspect') {
+          if (msg.archive) return { files: [{ filename: 'scripts.yaml', path: 'scripts.yaml', content: '{}\n', mode: 'replace', candidates: [] }] };
           const suggestions = {
             'configuration_blitzer_korrigiert.yaml': { path: 'configuration.yaml', suggested_path: 'configuration.yaml', candidates: ['configuration.yaml'] },
             'gasmeter.yaml': { path: 'packages/gasmeter.yaml', candidates: ['packages/gasmeter.yaml'] },
             'sauna_korrigiert.yaml': { path: '', candidates: ['includes/sauna.yaml', 'packages/sauna.yaml'] },
             'neue_datei.yaml': { path: 'neue_datei.yaml', mode: 'create', candidates: [] },
           };
-          return { files: msg.files.filter(file => file.filename.endsWith('.yaml')).map(file => ({ ...file, path: file.filename, mode: 'replace', source_matches: true, candidates: [], ...suggestions[file.filename] })) };
+          return { files: msg.files.filter(file => /\.ya?ml$/.test(file.filename)).map(file => ({ ...file, path: file.filename, mode: 'replace', source_matches: true, candidates: [], ...suggestions[file.filename] })) };
         }
         if (msg.action === 'preview' || msg.action === 'restore_preview') return preview;
         if (msg.action === 'apply') { applied = true; return { status: 'applied', files: [{ path: 'automations.yaml' }], validation: { warnings: [] } }; }
@@ -101,6 +102,38 @@ const path = require('node:path');
       await el('upload').setInputFiles({ name, mimeType: 'application/yaml', buffer: Buffer.from('{}\n') });
       await idle();
     };
+    const inspectCount = () => page.evaluate(() => window.calls.filter(x => x.action === 'inspect').length);
+    const openChooser = page.waitForEvent('filechooser');
+    await el('upload').click();
+    const chooser = await openChooser;
+    assert.equal(await chooser.element().getAttribute('accept'), null);
+    assert.equal(chooser.isMultiple(), true);
+    for (const [name, mimeType] of [['automations.yaml', 'application/octet-stream'], ['templates.yml', ''], ['configuration.yaml', 'text/plain']]) {
+      await chooser.setFiles({ name, mimeType, buffer: Buffer.from('# Grüße\r\n{}\r\n') });
+      await idle();
+      const sent = await page.evaluate(() => window.calls.filter(x => x.action === 'inspect').at(-1).files);
+      assert.deepEqual(sent, [{ filename: name, content: '# Grüße\r\n{}\r\n' }]);
+      assert.equal(await el('imports').locator('.import').count(), 1);
+    }
+    await el('upload').setInputFiles([
+      { name: 'configuration.yaml', mimeType: 'application/octet-stream', buffer: Buffer.from('{}\n') },
+      { name: 'configuration.landscape.json', mimeType: 'application/octet-stream', buffer: Buffer.from('{"schema_version":1}') },
+    ]); await idle();
+    assert.equal(await page.evaluate(() => window.calls.filter(x => x.action === 'inspect').at(-1).files.length), 2);
+    await el('upload').setInputFiles({ name: 'configuration.zip', mimeType: 'application/octet-stream', buffer: zipBytes }); await idle();
+    assert.equal(await page.evaluate(() => window.calls.filter(x => x.action === 'inspect').at(-1).archive), zipBytes.toString('base64'));
+    await el('preview-button').click(); await idle();
+    const countBeforeRejected = await inspectCount();
+    for (const name of ['document.pdf', 'old-export.bin']) {
+      await el('upload').setInputFiles({ name, mimeType: 'application/octet-stream', buffer: Buffer.from('{}\n') }); await idle();
+      assert.equal(await inspectCount(), countBeforeRejected);
+      assert.match(await el('message').innerText(), /Nicht unterstützte Datei/);
+      assert.equal(await el('preview').isVisible(), false);
+      assert.equal(await el('imports').locator('.import').count(), 0);
+    }
+    await el('upload').setInputFiles({ name: 'large.yaml', mimeType: 'application/octet-stream', buffer: Buffer.alloc(2000001, 32) }); await idle();
+    assert.equal(await inspectCount(), countBeforeRejected);
+    assert.match(await el('message').innerText(), /höchstens 2 MB/);
     await upload('configuration_blitzer_korrigiert.yaml');
     const target = () => el('imports').getByRole('combobox', { name: /^Zieldatei für / });
     const mode = () => el('imports').getByRole('combobox', { name: /^Importart für / });
@@ -150,7 +183,9 @@ const path = require('node:path');
     assert.equal(await mode().inputValue(), 'replace');
     const chooserPromise = page.waitForEvent('filechooser');
     await el('tree').locator('.file').filter({ hasText: 'scripts.yaml' }).getByRole('button', { name: 'Import / Diff' }).click();
-    await (await chooserPromise).setFiles({ name: 'configuration_blitzer_korrigiert.yaml', mimeType: 'application/yaml', buffer: Buffer.from('{}\n') });
+    const explicitChooser = await chooserPromise;
+    assert.equal(await explicitChooser.element().getAttribute('accept'), null);
+    await explicitChooser.setFiles({ name: 'configuration_blitzer_korrigiert.yaml', mimeType: 'application/octet-stream', buffer: Buffer.from('{}\n') });
     await idle();
     assert.equal(await target().inputValue(), 'scripts.yaml');
     assert.doesNotMatch(await el('imports').innerText(), /Nach Dateiname vorausgewählt/);
@@ -204,7 +239,7 @@ const path = require('node:path');
     assert.deepEqual(downloads, ['automations.yaml', 'configuration.zip', 'landscape_configuration_report.json', 'assist_landscape.zip', 'assist_apply_report.json']);
     assert.equal(await page.evaluate(() => window.injected), undefined);
     assert.deepEqual(errors, []);
-    console.log('Configuration UI: target suggestions, manual selection, ambiguous names, new paths, explicit target priority, merge availability, review invalidation, downloads, escaping, mobile layout, apply, restore and Assist navigation passed.');
+    console.log('Configuration UI: unrestricted file picker, generic/empty MIME types, YAML/YML/context/ZIP uploads, unsupported extensions, size limits, target suggestions, manual selection, ambiguous names, new paths, explicit target priority, merge availability, review invalidation, downloads, escaping, mobile layout, apply, restore and Assist navigation passed.');
   } finally {
     await browser.close(); server.close();
   }

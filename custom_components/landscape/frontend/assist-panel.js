@@ -107,7 +107,7 @@ class LandscapeAssistPanel extends HTMLElement {
 
   async _switchMode(configuration) {
     if (configuration && !customElements.get("landscape-configuration-panel")) {
-      try { await import("/landscape_static/configuration-panel.js?v=0.3.4"); }
+      try { await import("/landscape_static/configuration-panel.js?v=0.3.5"); }
       catch (error) { this._show("YAML-Dateien konnten nicht geladen werden: " + error.message, true); return; }
     }
     this._el("assist-main").hidden = configuration;

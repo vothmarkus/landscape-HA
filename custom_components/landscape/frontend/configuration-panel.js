@@ -49,7 +49,7 @@ class LandscapeConfigurationPanel extends HTMLElement {
         <section>
           <h2>YAML importieren</h2>
           <p>Überarbeitete oder neue YAML-Dateien vom KI-Chat herunterladen und in Landscape auswählen, einzeln oder als ZIP. Unveränderte .landscape.json-Begleitdateien kannst du mit importieren. Anschließend Ziel, Importart und Diff prüfen.</p>
-          <input id="upload" type="file" multiple accept=".yaml,.yml,.json,.zip" aria-label="Konfigurationsdateien importieren">
+          <input id="upload" type="file" multiple aria-label="Konfigurationsdateien importieren">
           <p id="target-hint" class="muted"></p><div id="imports"></div>
           <button id="preview-button" class="primary" hidden>Prüfen und Diff anzeigen</button>
         </section>
@@ -175,6 +175,10 @@ class LandscapeConfigurationPanel extends HTMLElement {
     if (!files.length) return;
     this._clearPreview(); this._imports = []; this._renderImports();
     const target = this._target; this._target = null; this._el("target-hint").textContent = "";
+    // Android providers may label YAML as octet-stream or omit its MIME type.
+    // Keep the native picker unrestricted and check names before reading files.
+    const unsupported = files.find(file => !/\.(?:ya?ml|json|zip)$/i.test(file.name));
+    if (unsupported) throw new Error("Nicht unterstützte Datei: " + unsupported.name + ". Bitte YAML-Dateien (.yaml/.yml), Landscape-Kontextdateien (.json) oder ein ZIP auswählen.");
     if (files.reduce((sum, file) => sum + file.size, 0) > 2000000) throw new Error("Import darf höchstens 2 MB groß sein.");
     const zip = files.find(file => file.name.toLowerCase().endsWith(".zip"));
     let fields;
