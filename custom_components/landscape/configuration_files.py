@@ -70,6 +70,8 @@ def filename_candidates(name: str, paths: list[str]) -> tuple[list[str], str]:
 class ConfigurationFiles:
     """All filesystem methods run in HA's executor."""
 
+    backup_dir = BACKUP_DIR
+
     def __init__(self, root: str) -> None:
         self.root = Path(root).resolve()
 
@@ -152,7 +154,9 @@ class ConfigurationFiles:
             raise ConfigurationError("Datei nicht gefunden oder nicht freigegeben.")
         return describe(files)[path] | {"content": files[path], "sha256": hashes[path]}
 
-    def export(self, paths: list[str] | None, context: bool, dated: bool) -> dict:
+    def export(
+        self, paths: list[str] | None, context: bool, dated: bool, bundle: bool = False
+    ) -> dict:
         files, hashes, skipped = self.snapshot()
         selected = sorted(files) if paths is None else paths
         if not selected or len(set(selected)) != len(selected):
@@ -170,7 +174,7 @@ class ConfigurationFiles:
             raise ConfigurationError(
                 "Während des Exports geändert. Bitte erneut exportieren."
             )
-        if len(selected) == 1 and not context and paths is not None:
+        if len(selected) == 1 and not context and paths is not None and not bundle:
             path = PurePosixPath(selected[0])
             filename = f"{path.stem}_{now[:10]}{path.suffix}" if dated else path.name
             payload, mime = contents[selected[0]], "application/yaml"
@@ -422,7 +426,7 @@ class ConfigurationFiles:
 
     def _backup_root(self, *, create: bool = True) -> Path:
         path = self.root
-        for part in BACKUP_DIR.split("/"):
+        for part in self.backup_dir.split("/"):
             path /= part
             if path.is_symlink():
                 raise ConfigurationError(

@@ -10,6 +10,7 @@ from homeassistant.helpers.service import async_register_admin_service
 
 from .assist import AssistOptimizer
 from .assist_api import async_setup_panel, async_unload_panel
+from .browser import BrowserWorkspace
 from .configuration import ConfigurationWorkspace
 from .const import (
     CSV_FILENAME,
@@ -30,6 +31,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     await exporter.assist.async_initialize()
     exporter.configuration = ConfigurationWorkspace(hass)
     await exporter.configuration.async_initialize()
+    exporter.browser = BrowserWorkspace(hass, exporter.configuration)
+    await exporter.browser.async_initialize()
 
     hass.data.setdefault(DOMAIN, {})[entry.entry_id] = exporter
     await async_setup_panel(hass, entry.entry_id)

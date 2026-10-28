@@ -26,9 +26,10 @@ Rückgabeformat erzeugen können.
 | --- | --- | --- | --- |
 | [**Entitäten**](#entitäten-export-und-import) | Namen, Aliase, Assist-Freigaben und räumliche Zuordnungen verbessern | ZIP mit Entitätsbestand, Anleitung und JSON-Schema | `assist_optimized.json`; einzelne Vorschläge prüfen und in HA übernehmen |
 | [**YAML-Dateien**](#yaml-dateien-export-und-import) | YAML prüfen, reparieren oder erweitern, etwa Automationen, Templates und Packages | Einzelne YAML, Dateiauswahl oder YAML-Bundle; optional mit Kontext | Vollständige YAML-Dateien, einzeln oder als ZIP; Diff, Dateiübernahme, HA-Prüfung und Backups |
+| [**Browser**](#browser-dateien-aller-typen) | Dateien unter `/config` bearbeiten, etwa JavaScript, CSS, JSON, Python, Blueprints und Bilder | Einzeldatei, Auswahl oder Ordner als ZIP; optional mit Pfaden und Prüfsummen | Vollständige Dateien oder ZIP; Textdiff bzw. Binärvergleich, Backups und Rücksetzung |
 | [**CSV-Bestand**](#csv-bestand-exportieren) | Entitäten und Geräte analysieren oder zusätzlichen Kontext für den Chat liefern | `ha_entitaeten.csv` | Analyse im Chat; für CSV gibt es keinen Rückimport |
 
-Die beiden Arbeitsbereiche **Entitäten** und **YAML-Dateien** stehen nach der
+Die drei Arbeitsbereiche **Entitäten**, **YAML-Dateien** und **Browser** stehen nach der
 [Einrichtung](#installation-mit-hacs) Administratoren in der Seitenleiste unter
 **HA Landscape** zur Verfügung. Den ergänzenden CSV-Export findest du an den
 Entitäten des Geräts **HA Landscape**.
@@ -219,6 +220,63 @@ entpacktem ZIP, bis zu 250 YAML-Dateien und 40 MB im Inventar. Ist ein Transfer 
 groß, eine kleinere Dateiauswahl verwenden. Die Inventargrenzen gelten für den
 gesamten zugänglichen YAML-Bestand. Die Oberfläche zeigt die letzten 20 Backups;
 ältere Backups werden nicht automatisch gelöscht. Symlinks werden nicht verfolgt.
+
+## Browser: Dateien aller Typen
+
+**HA Landscape → Browser** öffnet den Dateibrowser für `/config`. Anders als im
+YAML-Bereich sind auch `www`, `custom_components`, `blueprints` und `esphome`
+zugänglich. Alle Aktionen erfordern eine angemeldete HA-Administratorsitzung.
+
+- Ordner anklicken oder einen relativen Pfad eingeben. Der anklickbare Pfad führt
+  zurück zu übergeordneten Ordnern. Die Suche durchsucht den geöffneten Ordner
+  einschließlich Unterordnern nach Dateipfad und Typ.
+- Dateien einzeln auswählen, einen ganzen Ordner markieren oder **Treffer
+  auswählen** verwenden. Eine Auswahl bleibt beim Ordnerwechsel erhalten.
+- **Anzeigen** zeigt UTF-8-Text als Text, ohne HTML oder Code auszuführen.
+  Binärdateien zeigen Größe und SHA-256-Prüfsumme.
+- **Exportieren** lädt eine Einzeldatei mit ihren unveränderten Bytes herunter.
+  Mehrfachauswahlen und **Ordner-Bundle exportieren** erzeugen ZIP-Dateien mit
+  Pfaden relativ zu `/config`. Dateien über 1 MB werden dabei ausgelassen und
+  erscheinen im Browser mit einem entsprechenden Hinweis.
+- **Mit Kontext** ergänzt im ZIP `.landscape-browser/manifest.json` mit den
+  Quellpfaden und Prüfsummen. Diese Datei unverändert beilegen, um beim Rückimport
+  Änderungen seit dem Export zu erkennen. Andere JSON-Dateien bleiben normale
+  Nutzdateien. Browser- und YAML-Kontextformate sind getrennt.
+- **Import / Diff** an einer Datei setzt das Ziel ausdrücklich. Beim allgemeinen
+  Einzeldatei-Import ist der geöffnete Ordner das Ziel; ZIP-Bundles behalten ihre
+  Pfade ab `/config`. Die Option **ZIP als Dateibundle entpacken** abwählen, um
+  eine ZIP-Datei selbst zu importieren. Dateien ohne Endung sind ebenfalls möglich.
+- Vor der Übernahme Ziel und Importart prüfen: **Datei ersetzen**, **Als neue Datei
+  importieren** oder bei geeigneten HA-Automationen/Skripten/Szenen **Zusammenführen**.
+  Neue Unterordner werden beim Anlegen einer Datei erzeugt.
+- Textänderungen erscheinen als Zeilendiff. Für Binärdateien werden vorherige und
+  neue Größe sowie SHA-256 angezeigt. Zeilenenden, BOM und Binärdaten bleiben bei
+  Ersetzen/Neuanlegen bytegenau erhalten.
+
+JSON, Python und YAML werden ohne Codeausführung auf Syntax geprüft. Im bisherigen
+HA-YAML-Bereich gelten weiterhin die Include-/Strukturprüfungen; andere YAML-Dateien
+erhalten eine Syntaxprüfung, die etwa ESPHome-Tags nicht auflöst. Für andere
+Dateitypen gibt es keine Inhaltsprüfung. Die anschließende HA-Konfigurationsprüfung
+ist kein vollständiger Test von JavaScript, Python-Integrationen oder ESPHome.
+Neue HA-Prüfprobleme führen zur automatischen Rücksetzung.
+
+**Historie** an einer Datei filtert die über den Browser übernommenen Importe.
+Unter **Historie und Backups** lässt sich die Rücksetzung zunächst als Diff prüfen;
+sie betrifft den gesamten angezeigten Import, einschließlich aller darin geänderten
+Dateien. Externe Änderungen werden nicht historisiert und verhindern eine
+veraltete Rücksetzung. Browser-Backups liegen privat unter
+`/config/.storage/landscape_browser/`; die bisherigen YAML-Backups bleiben separat.
+Beide Bereiche verwenden dieselbe Schreibsperre und prüfen den Stand vor Übernahme.
+Backups werden nicht automatisch gelöscht. Codeänderungen erfordern je nach Datei
+ein Neuladen der betroffenen Integration oder einen HA-Neustart.
+
+Geschützt bleiben `secrets.yaml`/`secrets.yml`, versteckte Dateien/Verzeichnisse
+(einschließlich `.storage` und `.git`), Symlinks, laufende `home-assistant_v2.db*`
+und `home-assistant.log*`, Backup- und Abhängigkeitsordner (`backup`, `backups`,
+`deps`, `venv`, `node_modules`, `__pycache__`). Dateiinhalte werden nicht geschwärzt.
+Grenzen: 1 MB je Datei, 2 MB je Transfer einschließlich Kontext bzw. entpacktem ZIP,
+250 Dateien je Import/Export und 10.000 Dateien/Ordner im Browser-Inventar.
+Für HA-YAML gelten zusätzlich die bisherigen YAML-Inventargrenzen.
 
 ## Entitäten: Export und Import
 

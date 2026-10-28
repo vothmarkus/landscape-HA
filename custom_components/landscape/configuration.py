@@ -7,6 +7,7 @@ import logging
 from collections import Counter
 from pathlib import Path
 from time import monotonic
+from typing import ClassVar
 from uuid import uuid4
 
 from homeassistant.core import HomeAssistant
@@ -20,6 +21,12 @@ PREVIEW_TTL = 1800
 
 class ConfigurationWorkspace:
     """Serialize file access and bind each review to its administrator."""
+
+    preview_validation: ClassVar[dict[str, str]] = {
+        "yaml": "passed",
+        "context": "passed",
+        "home_assistant": "pending_apply",
+    }
 
     def __init__(self, hass: HomeAssistant) -> None:
         self.hass = hass
@@ -53,6 +60,7 @@ class ConfigurationWorkspace:
                     fields.get("paths"),
                     fields.get("context", False),
                     fields.get("dated", False),
+                    fields.get("bundle", False),
                 )
         raise ConfigurationError("Unbekannte Aktion.")
 
@@ -96,11 +104,7 @@ class ConfigurationWorkspace:
                     }
                     for change in plan["changes"]
                 ],
-                "validation": {
-                    "yaml": "passed",
-                    "context": "passed",
-                    "home_assistant": "pending_apply",
-                },
+                "validation": self.preview_validation.copy(),
                 "backup": "created_on_apply",
                 "skipped": plan["skipped"],
             }

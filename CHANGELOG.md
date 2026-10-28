@@ -1,5 +1,25 @@
 # Änderungen
 
+## 0.4.0
+
+- Neuer Tab **Browser** direkt neben **YAML-Dateien** für reguläre Dateien aller
+  Typen unter `/config`, einschließlich `www`, `custom_components`, `blueprints`
+  und `esphome`.
+- Ordnernavigation mit anklickbarem Pfad, direkter Pfadeingabe, rekursiver Suche,
+  Mehrfachauswahl und Ordnerauswahl; Einzel-, Auswahl- und Ordnerexporte.
+- Bytegenauer Austausch von Text- und Binärdateien. ZIP-Bundles behalten relative
+  Pfade; optionaler Kontext prüft den Ausgangsstand beim Rückimport.
+- Geprüfter Import mit Ersetzen, Neuanlegen und Zusammenführen geeigneter
+  HA-YAML-Dateien. Textdiff, Größen-/Prüfsummenvergleich für Binärdateien,
+  Syntaxprüfung von JSON, Python und YAML sowie bestehende HA-Prüfung.
+- Historie pro Datei, private Browser-Backups, Rücksetzung mit Vorschau und
+  Wiederherstellung unterbrochener Importe. Browser und YAML teilen dieselbe
+  Schreibsperre; bestehende YAML-/Assist-Austauschformate bleiben verwendbar.
+- Geheimnisdateien, versteckte/interne Dateien, laufende HA-Datenbanken/Logs,
+  Backups und Abhängigkeitsordner bleiben geschützt. Größenbegrenzungen werden
+  angezeigt; größere Dateien erscheinen im Browser ohne Transferaktionen.
+- Automatisierte Browser- und YAML-Oberflächentests in GitHub Actions.
+
 ## 0.3.5
 
 - Dateiauswahl für den YAML-Import ohne Betriebssystem-Dateitypfilter geöffnet.

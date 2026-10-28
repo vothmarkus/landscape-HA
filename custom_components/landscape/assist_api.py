@@ -43,6 +43,11 @@ async def async_setup_panel(hass: HomeAssistant, entry_id: str) -> None:
                     str(Path(__file__).parent / "frontend" / "configuration-panel.js"),
                     False,
                 ),
+                StaticPathConfig(
+                    "/landscape_static/browser-panel.js",
+                    str(Path(__file__).parent / "frontend" / "browser-panel.js"),
+                    False,
+                ),
             ]
         )
         websocket_api.async_register_command(hass, websocket_assist)

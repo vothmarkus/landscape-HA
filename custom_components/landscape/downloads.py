@@ -62,7 +62,10 @@ class DownloadStore:
             or len(filename) > 255
             or any(char in filename for char in "/\\")
             or any(ord(char) < 32 or ord(char) == 127 for char in filename)
-            or MIME_TYPES.get(filename.rsplit(".", 1)[-1].lower()) != mime
+            or (
+                mime != "application/octet-stream"
+                and MIME_TYPES.get(filename.rsplit(".", 1)[-1].lower()) != mime
+            )
         ):
             raise DownloadError("Ungültiger Download-Dateiname oder Dateityp.")
         if len(content) > MAX_DOWNLOAD_BYTES:
@@ -176,7 +179,7 @@ class LandscapeDownloadView(HomeAssistantView):
 @websocket_api.websocket_command(
     {
         vol.Required("type"): "landscape/download_report",
-        vol.Required("kind"): vol.In(["assist", "configuration"]),
+        vol.Required("kind"): vol.In(["assist", "configuration", "browser"]),
         vol.Required("report"): vol.All(str, vol.Length(max=2_000_000)),
     }
 )
@@ -187,6 +190,8 @@ async def websocket_download_report(hass, connection, msg) -> None:
     filename = (
         "assist_apply_report.json"
         if msg["kind"] == "assist"
+        else "landscape_browser_report.json"
+        if msg["kind"] == "browser"
         else "landscape_configuration_report.json"
     )
     try:

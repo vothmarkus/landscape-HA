@@ -70,6 +70,9 @@ def test_real_ha_signed_downloads(tmp_path):
                         "# Grüße\n{}\n".encode(),
                     ),
                     ("configuration.zip", "application/zip", b"PK\x03\x04\x00\xff"),
+                    ("icon.png", "application/octet-stream", b"\x00\xff\x80"),
+                    ("app.js", "application/octet-stream", b"alert('download only')"),
+                    ("LICENSE", "application/octet-stream", b"text without suffix"),
                     (
                         "assist_apply_report.json",
                         "application/json",

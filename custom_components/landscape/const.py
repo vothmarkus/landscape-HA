@@ -6,7 +6,7 @@ from homeassistant.const import Platform
 
 DOMAIN = "landscape"
 NAME = "HA Landscape"
-VERSION = "0.3.5"
+VERSION = "0.4.0"
 
 CSV_FILENAME = "ha_entitaeten.csv"
 CSV_DELIMITER = ";"

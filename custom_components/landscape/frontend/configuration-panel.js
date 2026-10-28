@@ -76,7 +76,7 @@ class LandscapeConfigurationPanel extends HTMLElement {
       const report = await this._call("apply", { preview_id: this._preview.preview_id });
       this._report = report; this._clearPreview(); this._el("result").hidden = false;
       const labels = {
-        applied: "Dateien übernommen und HA-Prüfung abgeschlossen. Passende YAML-Bereiche anschließend in Home Assistant neu laden; falls erforderlich Home Assistant neu starten.",
+        applied: "Dateien übernommen und HA-Prüfung abgeschlossen. Betroffene Bereiche anschließend neu laden; falls erforderlich Home Assistant neu starten.",
         unchanged: "Keine Dateiänderungen erforderlich.",
         rolled_back: "Import zurückgesetzt. Die ursprünglichen Dateien sind wiederhergestellt.",
         recovery_required: "Rücksetzung unvollständig. Die genannten Dateien anhand des Backups prüfen, bevor Home Assistant neu gestartet wird.",
@@ -94,7 +94,7 @@ class LandscapeConfigurationPanel extends HTMLElement {
     });
     this._el("close-view").onclick = () => { this._el("viewer").hidden = true; };
     this._el("download-report").onclick = () => this._run(async () => {
-      const result = await this._hass.callWS({ type: "landscape/download_report", kind: "configuration", report: JSON.stringify(this._report, null, 2) });
+      const result = await this._hass.callWS({ type: "landscape/download_report", kind: this._scope || "configuration", report: JSON.stringify(this._report, null, 2) });
       this._download(result.filename, result.download_url);
     });
   }
@@ -102,7 +102,7 @@ class LandscapeConfigurationPanel extends HTMLElement {
     if (!this._built || !this._hass || !this._panel || this._loaded) return;
     this._loaded = true; this._run(() => this._refresh());
   }
-  _call(action, fields = {}) { return this._hass.callWS({ type: "landscape/configuration", entry_id: this._panel.config.entry_id, action, ...fields }); }
+  _call(action, fields = {}) { return this._hass.callWS({ type: "landscape/configuration", entry_id: this._panel.config.entry_id, action, ...(this._scope ? { scope: this._scope } : {}), ...fields }); }
   async _run(task) {
     if (this._busy) return;
     this._busy = true; this._setBusy();
@@ -164,8 +164,9 @@ class LandscapeConfigurationPanel extends HTMLElement {
     this._el("view-info").textContent = file.type + " · " + (file.included_by.map(item => item.path + " → " + item.key + " (" + item.tag + ")").join("; ") || "Keine übergeordnete Einbindung") + (file.warnings?.length ? " · " + file.warnings.join("; ") : "");
     this._el("view-content").textContent = file.content; this._el("viewer").scrollIntoView({ block: "start", behavior: "smooth" });
   }
-  async _export(paths) {
+  async _export(paths, bundle = false) {
     const fields = { context: this._el("context").checked, dated: this._el("dated").checked, download: true };
+    if (bundle) fields.bundle = true;
     if (paths !== null) fields.paths = paths;
     const result = await this._call("export", fields);
     this._download(result.filename, result.download_url);
@@ -207,7 +208,7 @@ class LandscapeConfigurationPanel extends HTMLElement {
       const candidates = file.candidates || [];
       const paths = this._files.map(item => item.path);
       const matching = candidates.filter(path => paths.includes(path));
-      for (const [name, items] of [["Passende Dateinamen", matching], [matching.length ? "Weitere YAML-Dateien" : "YAML-Dateien", paths.filter(path => !matching.includes(path)).sort()]]) {
+      for (const [name, items] of [["Passende Dateinamen", matching], [matching.length ? "Weitere Dateien" : "Dateien", paths.filter(path => !matching.includes(path)).sort()]]) {
         if (!items.length) continue;
         const group = document.createElement("optgroup"); group.label = name;
         for (const path of items) {
@@ -255,7 +256,7 @@ class LandscapeConfigurationPanel extends HTMLElement {
   }
   async _makePreview() {
     this._clearPreview();
-    const files = this._imports.filter(file => file.selected).map(({ path, mode, content, source_sha256, source_path }) => ({ path, mode, content, source_sha256, source_path }));
+    const files = this._imports.filter(file => file.selected).map(({ path, mode, content, encoding, source_sha256, source_path }) => ({ path, mode, content, ...(encoding ? { encoding } : {}), source_sha256, source_path }));
     this._renderPreview(await this._call("preview", { files }));
   }
   _renderPreview(result) {
@@ -267,7 +268,9 @@ class LandscapeConfigurationPanel extends HTMLElement {
       const summary = document.createElement("summary"); summary.textContent = file.path + " · " + file.context.type + " · +" + file.added + " / −" + file.removed;
       const warnings = document.createElement("p"); warnings.className = "muted"; warnings.textContent = file.context.warnings.join(" ");
       const pre = document.createElement("pre");
-      for (const line of file.diff.split("\n")) { const span = document.createElement("span"); span.textContent = line + "\n"; span.className = line.startsWith("+") ? "diff-add" : line.startsWith("-") ? "diff-remove" : line.startsWith("@@") ? "diff-hunk" : ""; pre.append(span); }
+      if (file.binary || (!file.diff && file.before_hash !== file.after_hash)) {
+        pre.textContent = (file.binary ? "Binärdatei – Vergleich anhand von Größe und SHA-256." : "Dateibytes geändert (z. B. Kodierung / BOM).") + "\nVorher: " + file.before_size + " Bytes\nSHA-256: " + (file.before_hash || "nicht vorhanden") + "\nNachher: " + file.after_size + " Bytes\nSHA-256: " + (file.after_hash || "nicht vorhanden");
+      } else for (const line of file.diff.split("\n")) { const span = document.createElement("span"); span.textContent = line + "\n"; span.className = line.startsWith("+") ? "diff-add" : line.startsWith("-") ? "diff-remove" : line.startsWith("@@") ? "diff-hunk" : ""; pre.append(span); }
       details.append(summary, warnings, pre); diffs.append(details);
     }
     this._el("preview").scrollIntoView({ block: "start", behavior: "smooth" });
@@ -280,7 +283,7 @@ class LandscapeConfigurationPanel extends HTMLElement {
       const details = document.createElement("details"); const summary = document.createElement("summary");
       summary.textContent = (backup.created_at ? new Date(backup.created_at).toLocaleString("de-DE") : "Backup") + " · " + (labels[backup.status] || backup.status) + " · " + backup.files.length + " Datei(en)";
       const paths = document.createElement("p"); paths.textContent = backup.files.map(file => file.path).join(", ");
-      const location = document.createElement("small"); location.textContent = "Backup: /config/.storage/landscape_configuration/" + backup.id;
+      const location = document.createElement("small"); location.textContent = "Backup: /config/.storage/landscape_" + (this._scope || "configuration") + "/" + backup.id;
       details.append(summary, paths, location);
       if (backup.status === "applied") details.append(this._button("Rücksetzung prüfen", () => this._run(async () => { this._clearPreview(); this._renderPreview(await this._call("restore_preview", { backup_id: backup.id })); })));
       if (backup.rollback_errors?.length) { const error = document.createElement("p"); error.className = "error"; error.textContent = "Manuell prüfen: " + backup.rollback_errors.join(", "); details.append(error); }

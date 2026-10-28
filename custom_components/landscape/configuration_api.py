@@ -19,6 +19,7 @@ _LOGGER = logging.getLogger(__name__)
     {
         vol.Required("type"): "landscape/configuration",
         vol.Required("entry_id"): str,
+        vol.Optional("scope"): vol.In(["configuration", "browser"]),
         vol.Required("action"): vol.In(
             [
                 "list",
@@ -35,6 +36,7 @@ _LOGGER = logging.getLogger(__name__)
         vol.Optional("paths"): [str],
         vol.Optional("context"): bool,
         vol.Optional("dated"): bool,
+        vol.Optional("bundle"): bool,
         vol.Optional("download"): bool,
         vol.Optional("files"): [dict],
         vol.Optional("archive"): str,
@@ -48,7 +50,7 @@ async def websocket_configuration(
     hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict
 ) -> None:
     exporter = hass.data.get(DOMAIN, {}).get(msg["entry_id"])
-    workspace = getattr(exporter, "configuration", None)
+    workspace = getattr(exporter, msg.get("scope", "configuration"), None)
     if workspace is None:
         connection.send_error(
             msg["id"], "not_loaded", "HA Landscape ist nicht geladen."
@@ -60,7 +62,7 @@ async def websocket_configuration(
             fields = {
                 key: value
                 for key, value in msg.items()
-                if key not in {"id", "type", "entry_id", "action"}
+                if key not in {"id", "type", "entry_id", "action", "scope"}
             }
             result = await workspace.async_read(action, **fields)
             if action == "export" and msg.get("download"):
